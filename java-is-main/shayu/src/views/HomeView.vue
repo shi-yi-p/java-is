@@ -221,6 +221,11 @@ function logout() {
   toast('已退出登录，拜拜 👋')
   setTimeout(() => { location.hash = '#/login' }, 400)
 }
+
+/* 跳转后台管理系统登录页 */
+function goAdmin() {
+  location.hash = '#/admin-login'
+}
 </script>
 
 <template>
@@ -294,6 +299,7 @@ function logout() {
         :class="{ active: activeNav === n }"
         @click.prevent="n === '首页' ? (activeNav = '首页') : coming(n)"
       >{{ n }}</a>
+      <a class="kg-nav-admin" href="#/admin-login" @click.prevent="goAdmin">🛠 后台管理系统</a>
     </nav>
 
     <!-- ================= Banner 轮播 ================= -->
@@ -607,6 +613,18 @@ function logout() {
   }
   .kg-nav-item:hover { color: #0b7efc; }
   .kg-nav-item.active { color: #fff; background: #0b7efc; font-weight: 700; }
+
+  /* ===== 后台管理系统入口按钮 ===== */
+  .kg-nav-admin {
+    margin-left: auto;
+    font-size: 13px; font-weight: 800; text-decoration: none;
+    color: #fff; background: linear-gradient(140deg, #f97316, #ef4444);
+    border-radius: 999px; padding: 6px 16px;
+    box-shadow: 0 3px 8px rgba(239, 68, 68, 0.35);
+    transition: transform 0.14s ease, box-shadow 0.14s ease, filter 0.14s ease;
+  }
+  .kg-nav-admin:hover { transform: translateY(-1px); filter: brightness(1.05); box-shadow: 0 5px 12px rgba(239, 68, 68, 0.45); }
+  .kg-nav-admin:active { transform: translateY(1px); }
 
   /* ===== Banner 轮播 ===== */
   .kg-banner {

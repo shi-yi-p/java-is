@@ -2,14 +2,20 @@
 import { ref, onMounted, onUnmounted } from 'vue'
 import LoginView from './views/LoginView.vue'
 import HomeView from './views/HomeView.vue'
+import AdminLoginView from './views/AdminLoginView.vue'
+import AdminDashboardView from './views/AdminDashboardView.vue'
 
-/* ============ 极简 hash 路由：#/login ↔ #/home ============ */
+/* ============ 极简 hash 路由：#/login ↔ #/home ↔ #/admin-login ↔ #/admin ============ */
 const readToken = () => {
   try { return localStorage.getItem('shark_token') || '' } catch (e) { return '' }
+}
+const readAdminToken = () => {
+  try { return localStorage.getItem('shark_admin_token') || '' } catch (e) { return '' }
 }
 
 function resolveRoute() {
   const h = location.hash.replace(/^#\/?/, '').split('?')[0]
+  if (h === 'admin' || h === 'admin-login') return h        /* 后台管理 */
   if (h === 'home' || h === 'login') return h
   return readToken() ? 'home' : 'login'   /* 默认：有 token 进首页，否则进登录页 */
 }
@@ -18,7 +24,8 @@ const route = ref(resolveRoute())
 
 function applyRoute() {
   let r = resolveRoute()
-  if (r === 'home' && !readToken()) r = 'login'   /* 未登录访问首页 → 回登录页 */
+  if (r === 'admin' && !readAdminToken()) r = 'admin-login'   /* 未登录访问后台 → 回后台登录页 */
+  if (r === 'home' && !readToken()) r = 'login'               /* 未登录访问首页 → 回登录页 */
   route.value = r
   const target = '#/' + r
   if (location.hash !== target) location.hash = target
@@ -60,7 +67,9 @@ const pearls = ref([])
   </div>
 
   <LoginView v-if="route === 'login'" />
-  <HomeView v-else />
+  <HomeView v-else-if="route === 'home'" />
+  <AdminLoginView v-else-if="route === 'admin-login'" />
+  <AdminDashboardView v-else />
 </template>
 
 <style>
