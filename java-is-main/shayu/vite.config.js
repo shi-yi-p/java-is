@@ -10,6 +10,12 @@ export default defineConfig({
       '/api': {
         target: 'http://127.0.0.1:8081',
         changeOrigin: true
+      },
+      // Navidrome / Subsonic API + 音频流：/navidrome/rest/... -> http://127.0.0.1:4533/rest/...
+      '/navidrome': {
+        target: 'http://127.0.0.1:4533',
+        changeOrigin: true,
+        rewrite: (p) => p.replace(/^\/navidrome/, '')
       }
     }
   }

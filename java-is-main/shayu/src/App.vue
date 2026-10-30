@@ -5,7 +5,14 @@ import HomeView from './views/HomeView.vue'
 import AdminLoginView from './views/AdminLoginView.vue'
 import AdminDashboardView from './views/AdminDashboardView.vue'
 
-/* ============ 极简 hash 路由：#/login ↔ #/home ↔ #/admin-login ↔ #/admin ============ */
+/* ============ 极简 hash 路由 ============
+ * #/login  登录页
+ * #/home   首页
+ * #/rank        榜单页      ┐ 都由 HomeView 承载（共用顶栏/导航/播放器），
+ * #/audiobook   听书页      │ HomeView 内部再按 hash 切换内容视图
+ * #/live        直播页      ┘
+ * #/admin-login、#/admin    后台管理
+ * ======================================== */
 const readToken = () => {
   try { return localStorage.getItem('shark_token') || '' } catch (e) { return '' }
 }
@@ -13,20 +20,27 @@ const readAdminToken = () => {
   try { return localStorage.getItem('shark_admin_token') || '' } catch (e) { return '' }
 }
 
+/* 由首页外壳承载的子页面 */
+const HOME_PAGES = ['home', 'rank', 'audiobook', 'live']
+
+/* 归一化：rank/audiobook 也由 HomeView 渲染，避免落到模板兜底分支 */
+const toView = r => (HOME_PAGES.includes(r) ? 'home' : r)
+
 function resolveRoute() {
   const h = location.hash.replace(/^#\/?/, '').split('?')[0]
   if (h === 'admin' || h === 'admin-login') return h        /* 后台管理 */
-  if (h === 'home' || h === 'login') return h
+  if (h === 'login') return h
+  if (HOME_PAGES.includes(h)) return h
   return readToken() ? 'home' : 'login'   /* 默认：有 token 进首页，否则进登录页 */
 }
 
-const route = ref(resolveRoute())
+const route = ref(toView(resolveRoute()))
 
 function applyRoute() {
   let r = resolveRoute()
   if (r === 'admin' && !readAdminToken()) r = 'admin-login'   /* 未登录访问后台 → 回后台登录页 */
-  if (r === 'home' && !readToken()) r = 'login'               /* 未登录访问首页 → 回登录页 */
-  route.value = r
+  if (HOME_PAGES.includes(r) && !readToken()) r = 'login'     /* 未登录访问首页/榜单/听书 → 回登录页 */
+  route.value = toView(r)                                     /* 统一交给 HomeView 渲染 */
   const target = '#/' + r
   if (location.hash !== target) location.hash = target
 }
