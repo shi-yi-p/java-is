@@ -31,6 +31,9 @@ public class Song {
     /** 时长（秒） */
     private Integer duration;
 
+    /** 真实音源地址（可选）：存 mp3/m4a 直链，存在则播放器优先使用真实音源 */
+    private String url;
+
     /** 播放量 */
     private Long plays;
 

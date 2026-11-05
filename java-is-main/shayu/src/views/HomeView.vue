@@ -100,9 +100,14 @@ onUnmounted(() => { if (bannerTimer) clearInterval(bannerTimer) })
  *   GET /api/home/audiobooks?tab= 听书精选（热门/小说/儿童/相声/情感）
  *   GET /api/home/channels        热门频道
  *   GET /api/home/singers?tab=    热门歌手（华语/欧美/日韩）
+ *   GET /api/douyin/hot           抖音热歌榜
  * ============================================================ */
 const playlists = ref([])                                  /* 精选歌单 */
 const charts = ref([])                                     /* 热门榜单 */
+const douyinHot = ref([])                                  /* 抖音热歌榜 */
+const kugouHot = ref([])                                   /* 酷狗热歌榜 */
+const qqHot = ref([])                                      /* QQ音乐热歌榜 */
+const neteaseHot = ref([])                                 /* 网易云热歌榜 */
 const bookTabs = ['热门', '小说', '儿童', '相声', '情感']
 const activeBookTab = ref('热门')
 const audiobooks = ref([])                                 /* 听书精选 */
@@ -128,6 +133,76 @@ async function loadHome() {
   }
 }
 onMounted(loadHome)
+
+/* ============ 抖音热歌榜：一次性拉取 ============ */
+async function loadDouyinHot() {
+  try {
+    const res = await fetch(API + '/api/douyin/hot')
+    const d = await res.json().catch(() => ({}))
+    douyinHot.value = (res.ok && Array.isArray(d.data)) ? d.data : []
+  } catch (e) {
+    douyinHot.value = []
+  }
+}
+onMounted(loadDouyinHot)
+
+/* 抖音热歌榜：播放整榜 */
+function playDouyinAll() {
+  if (!douyinHot.value.length) return toast('抖音热歌榜暂无歌曲 🎧')
+  playSong(douyinHot.value[0], douyinHot.value)
+}
+
+/* ============ 酷狗热歌榜：一次性拉取 ============ */
+async function loadKugouHot() {
+  try {
+    const res = await fetch(API + '/api/kugou/hot')
+    const d = await res.json().catch(() => ({}))
+    kugouHot.value = (res.ok && Array.isArray(d.data)) ? d.data : []
+  } catch (e) {
+    kugouHot.value = []
+  }
+}
+onMounted(loadKugouHot)
+
+/* 酷狗热歌榜：播放整榜 */
+function playKugouAll() {
+  if (!kugouHot.value.length) return toast('酷狗热歌榜暂无歌曲 🎧')
+  playSong(kugouHot.value[0], kugouHot.value)
+}
+
+/* ============ QQ音乐热歌榜：一次性拉取 ============ */
+async function loadQqHot() {
+  try {
+    const res = await fetch(API + '/api/qq/hot')
+    const d = await res.json().catch(() => ({}))
+    qqHot.value = (res.ok && Array.isArray(d.data)) ? d.data : []
+  } catch (e) {
+    qqHot.value = []
+  }
+}
+onMounted(loadQqHot)
+
+function playQqAll() {
+  if (!qqHot.value.length) return toast('QQ音乐热歌榜暂无歌曲 🎧')
+  playSong(qqHot.value[0], qqHot.value)
+}
+
+/* ============ 网易云热歌榜：一次性拉取 ============ */
+async function loadNeteaseHot() {
+  try {
+    const res = await fetch(API + '/api/netease/hot')
+    const d = await res.json().catch(() => ({}))
+    neteaseHot.value = (res.ok && Array.isArray(d.data)) ? d.data : []
+  } catch (e) {
+    neteaseHot.value = []
+  }
+}
+onMounted(loadNeteaseHot)
+
+function playNeteaseAll() {
+  if (!neteaseHot.value.length) return toast('网易云热歌榜暂无歌曲 🎧')
+  playSong(neteaseHot.value[0], neteaseHot.value)
+}
 
 /* ============ 听书精选：按分类 tab 拉取 ============ */
 async function loadAudiobooks(tab) {
@@ -532,6 +607,122 @@ function goAdmin() {
           <div><b>实时</b><span>每日更新</span></div>
         </div>
       </header>
+
+      <!-- 抖音热歌榜 -->
+      <div v-if="douyinHot.length" class="kg-douyin">
+        <div class="kg-douyin-head">
+          <div class="kg-douyin-title">
+            <i class="kg-douyin-badge">🔥 抖音热歌榜</i>
+            <h3>全网刷屏神曲 · 实时热度</h3>
+          </div>
+          <button class="kg-douyin-play" type="button" @click="playDouyinAll">
+            ▶ 播放全部（{{ douyinHot.length }}）
+          </button>
+        </div>
+
+        <ol class="kg-douyin-list">
+          <li
+            v-for="s in douyinHot"
+            :key="s.id"
+            @click="playSong(s, douyinHot)"
+          >
+            <span class="kg-rank" :class="{ top: s.rankNo <= 3 }">{{ s.rankNo }}</span>
+            <span class="kg-song">
+              <b class="kg-song-title">{{ s.title }}</b>
+              <span class="kg-song-artist"> - {{ s.artist }}</span>
+            </span>
+            <span class="kg-douyin-hot">🔥 {{ fmtPlays(s.hotValue) }}</span>
+            <span class="kg-trend" :class="s.trend">{{ trendOf(s.trend) }}</span>
+          </li>
+        </ol>
+      </div>
+
+      <!-- 酷狗热歌榜 -->
+      <div v-if="kugouHot.length" class="kg-douyin kg-kugou">
+        <div class="kg-douyin-head">
+          <div class="kg-douyin-title">
+            <i class="kg-douyin-badge kg-kugou-badge">🎵 酷狗热歌榜</i>
+            <h3>经典 · 流行 · 传唱金曲</h3>
+          </div>
+          <button class="kg-douyin-play kg-kugou-play" type="button" @click="playKugouAll">
+            ▶ 播放全部（{{ kugouHot.length }}）
+          </button>
+        </div>
+
+        <ol class="kg-douyin-list">
+          <li
+            v-for="s in kugouHot"
+            :key="s.id"
+            @click="playSong(s, kugouHot)"
+          >
+            <span class="kg-rank" :class="{ top: s.rankNo <= 3 }">{{ s.rankNo }}</span>
+            <span class="kg-song">
+              <b class="kg-song-title">{{ s.title }}</b>
+              <span class="kg-song-artist"> - {{ s.artist }}</span>
+            </span>
+            <span class="kg-douyin-hot kg-kugou-hot">🔥 {{ fmtPlays(s.hotValue) }}</span>
+            <span class="kg-trend" :class="s.trend">{{ trendOf(s.trend) }}</span>
+          </li>
+        </ol>
+      </div>
+
+      <!-- QQ音乐热歌榜 -->
+      <div v-if="qqHot.length" class="kg-douyin kg-qq">
+        <div class="kg-douyin-head">
+          <div class="kg-douyin-title">
+            <i class="kg-douyin-badge kg-qq-badge">🎼 QQ音乐热歌榜</i>
+            <h3>巅峰流行 · 传唱经典</h3>
+          </div>
+          <button class="kg-douyin-play kg-qq-play" type="button" @click="playQqAll">
+            ▶ 播放全部（{{ qqHot.length }}）
+          </button>
+        </div>
+
+        <ol class="kg-douyin-list">
+          <li
+            v-for="s in qqHot"
+            :key="s.id"
+            @click="playSong(s, qqHot)"
+          >
+            <span class="kg-rank" :class="{ top: s.rankNo <= 3 }">{{ s.rankNo }}</span>
+            <span class="kg-song">
+              <b class="kg-song-title">{{ s.title }}</b>
+              <span class="kg-song-artist"> - {{ s.artist }}</span>
+            </span>
+            <span class="kg-douyin-hot kg-qq-hot">🔥 {{ fmtPlays(s.hotValue) }}</span>
+            <span class="kg-trend" :class="s.trend">{{ trendOf(s.trend) }}</span>
+          </li>
+        </ol>
+      </div>
+
+      <!-- 网易云热歌榜 -->
+      <div v-if="neteaseHot.length" class="kg-douyin kg-netease">
+        <div class="kg-douyin-head">
+          <div class="kg-douyin-title">
+            <i class="kg-douyin-badge kg-netease-badge">☁️ 网易云热歌榜</i>
+            <h3>独立 · 民谣 · 走心热歌</h3>
+          </div>
+          <button class="kg-douyin-play kg-netease-play" type="button" @click="playNeteaseAll">
+            ▶ 播放全部（{{ neteaseHot.length }}）
+          </button>
+        </div>
+
+        <ol class="kg-douyin-list">
+          <li
+            v-for="s in neteaseHot"
+            :key="s.id"
+            @click="playSong(s, neteaseHot)"
+          >
+            <span class="kg-rank" :class="{ top: s.rankNo <= 3 }">{{ s.rankNo }}</span>
+            <span class="kg-song">
+              <b class="kg-song-title">{{ s.title }}</b>
+              <span class="kg-song-artist"> - {{ s.artist }}</span>
+            </span>
+            <span class="kg-douyin-hot kg-netease-hot">🔥 {{ fmtPlays(s.hotValue) }}</span>
+            <span class="kg-trend" :class="s.trend">{{ trendOf(s.trend) }}</span>
+          </li>
+        </ol>
+      </div>
 
       <div v-if="charts.length" class="kg-rank-grid">
         <article v-for="c in charts" :key="c.id" class="kg-rank-card">
@@ -1387,6 +1578,104 @@ function goAdmin() {
   }
   .kg-page-stats span { font-size: 11.5px; font-weight: 600; color: rgba(255, 255, 255, 0.68); }
 
+  /* ===== 抖音热歌榜 ===== */
+  .kg-douyin {
+    margin-top: 22px;
+    background: linear-gradient(160deg, #fff 0%, #fff7f0 100%);
+    border: 1px solid #ffe0cc;
+    border-radius: 14px;
+    padding: 18px 20px;
+  }
+  .kg-douyin-head {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 12px;
+  }
+  .kg-douyin-title h3 {
+    margin: 4px 0 0;
+    font-size: 13px; font-weight: 600;
+    color: #7a879a;
+  }
+  .kg-douyin-badge {
+    font-style: normal;
+    font-size: 18px; font-weight: 800;
+    color: #ff4d1f;
+  }
+  .kg-douyin-play {
+    flex: none;
+    height: 34px; padding: 0 18px;
+    font-family: var(--font);
+    font-size: 12.5px; font-weight: 700;
+    color: #fff;
+    background: linear-gradient(140deg, #ff6a3d, #ff2e4d);
+    border: 0; border-radius: 999px;
+    cursor: pointer;
+    box-shadow: 0 6px 16px rgba(255, 46, 77, 0.3);
+    transition: filter .15s ease, transform .15s ease;
+  }
+  .kg-douyin-play:hover { filter: brightness(1.06); }
+  .kg-douyin-play:active { transform: scale(0.96); }
+  .kg-douyin-list {
+    list-style: none;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 4px 24px;
+  }
+  .kg-douyin-list li {
+    display: flex; align-items: center; gap: 10px;
+    padding: 8px 10px;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: background .15s ease;
+  }
+  .kg-douyin-list li:hover { background: rgba(255, 77, 31, 0.06); }
+  .kg-douyin-list .kg-song { flex: 1; min-width: 0; }
+  .kg-douyin-hot {
+    flex: none;
+    font-size: 11px; font-weight: 700;
+    color: #ff7a45;
+    white-space: nowrap;
+  }
+
+  /* ===== 酷狗热歌榜：差异化蓝绿配色 ===== */
+  .kg-kugou {
+    background: linear-gradient(160deg, #fff 0%, #eef9ff 100%);
+    border-color: #cfeaff;
+  }
+  .kg-kugou-badge { color: #0a84ff; }
+  .kg-kugou-play {
+    background: linear-gradient(140deg, #1fb6ff, #0a84ff);
+    box-shadow: 0 6px 16px rgba(10, 132, 255, 0.3);
+  }
+  .kg-kugou .kg-douyin-list li:hover { background: rgba(10, 132, 255, 0.06); }
+  .kg-kugou-hot { color: #0a84ff; }
+
+  /* ===== QQ音乐热歌榜：绿色调 ===== */
+  .kg-qq {
+    background: linear-gradient(160deg, #fff 0%, #eafaf1 100%);
+    border-color: #c8f0d8;
+  }
+  .kg-qq-badge { color: #2eb872; }
+  .kg-qq-play {
+    background: linear-gradient(140deg, #31c27c, #2eb872);
+    box-shadow: 0 6px 16px rgba(46, 184, 114, 0.3);
+  }
+  .kg-qq .kg-douyin-list li:hover { background: rgba(46, 184, 114, 0.06); }
+  .kg-qq-hot { color: #2eb872; }
+
+  /* ===== 网易云热歌榜：红色调 ===== */
+  .kg-netease {
+    background: linear-gradient(160deg, #fff 0%, #fdf0f0 100%);
+    border-color: #f7d4d4;
+  }
+  .kg-netease-badge { color: #e03131; }
+  .kg-netease-play {
+    background: linear-gradient(140deg, #e8595c, #d6336c);
+    box-shadow: 0 6px 16px rgba(214, 51, 108, 0.3);
+  }
+  .kg-netease .kg-douyin-list li:hover { background: rgba(214, 51, 108, 0.06); }
+  .kg-netease-hot { color: #d6336c; }
+
   /* ===== 榜单页：2 列榜单卡片 ===== */
   .kg-rank-grid {
     display: grid;
@@ -1522,6 +1811,7 @@ function goAdmin() {
     .kg-page-hero-text h2 { font-size: 24px; }
     .kg-page-stats { gap: 22px; }
     .kg-rank-grid { grid-template-columns: 1fr; }
+    .kg-douyin-list { grid-template-columns: 1fr; }
     .kg-book-list { grid-template-columns: 1fr; }
     .kg-live-grid { grid-template-columns: repeat(2, 1fr); }
   }

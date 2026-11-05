@@ -15,6 +15,7 @@ CREATE TABLE IF NOT EXISTS `song` (
   `artist`      VARCHAR(64)  NOT NULL                COMMENT '歌手/乐队',
   `album`       VARCHAR(64)  NULL                    COMMENT '所属专辑',
   `duration`    INT          NOT NULL DEFAULT 0      COMMENT '时长（秒）',
+  `url`         VARCHAR(512) NULL                    COMMENT '真实音源直链（可选，存在则优先播放）',
   `plays`       BIGINT       NOT NULL DEFAULT 0      COMMENT '播放量',
   `create_time` DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `update_time` DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
