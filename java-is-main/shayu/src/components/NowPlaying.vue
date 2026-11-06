@@ -3,7 +3,7 @@
  * 正在播放（酷狗式全屏详情页）
  * 由 HomeView 的 <NowPlaying v-if="player.open" /> 渲染
  * ============================================================ */
-import { player, togglePlay, next, prev, seek, fmtTime, playTrack } from '../player.js'
+import { player, togglePlay, next, prev, seek, fmtTime, playTrack, cycleMode } from '../player.js'
 import { ref, computed, watch, nextTick } from 'vue'
 
 const like = ref(false)
@@ -30,6 +30,13 @@ function toggleLike() {
 
 function close() {
   player.open = false
+}
+
+/* 播放模式图标 */
+const MODE_LABEL = { list: '🔁', one: '🔂', order: '➡️' }
+function toggleMode() {
+  cycleMode()
+  toast('播放模式：' + ({ list: '列表循环', one: '单曲循环', order: '顺序播放' })[player.mode])
 }
 
 function playFromQueue(i) {
@@ -189,6 +196,7 @@ const waveBars = computed(() => {
           {{ player.playing ? '⏸' : '▶' }}
         </button>
         <button class="np-ctrl-btn skip" type="button" title="下一首" @click="next">⏭</button>
+        <button class="np-ctrl-btn" type="button" :class="{ on: player.mode === 'one' }" title="播放模式" @click="toggleMode">{{ MODE_LABEL[player.mode] }}</button>
         <button class="np-ctrl-btn" type="button" :class="{ on: lyricMode }" @click="lyricMode = !lyricMode">词</button>
       </div>
 

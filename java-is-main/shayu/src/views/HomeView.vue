@@ -47,7 +47,7 @@ const helloName = computed(() => nickname.value || '鲨鲨乐迷')
 
 /* ============ 顶栏 / 导航 ============ */
 const topLinks = ['音乐人', '声播创作', 'VIP会员']
-const navItems = ['首页', '榜单', '听书', '直播', '下载鲨鱼', '商务合作', '更多']
+const navItems = ['首页', '榜单', '听书', '直播', '论坛', '下载鲨鱼', '商务合作', '更多']
 
 /* ============ 子页面：首页 / 榜单 / 听书 / 直播（由 hash 驱动，支持浏览器前进后退）============ */
 const PAGE_ROUTES = ['rank', 'audiobook', 'live']
@@ -367,6 +367,9 @@ function goNav(n) {
   if (n === '直播') return goPage('live')
   if (n === '首页') return goPage('home')
 
+  /* 论坛：独立页面 */
+  if (n === '论坛') { location.hash = '#/forum'; return }
+
   /* 商务合作：弹窗 */
   if (n === '商务合作') { openInfo('商务合作', '商务 / 媒体 / 版权合作请联系：\n\nbiz@sharkmusic.demo\n\n（演示项目）'); return }
 
@@ -426,6 +429,11 @@ function logout() {
 function goAdmin() {
   location.hash = '#/admin-login'
 }
+
+/* 跳转个人主页 */
+function goProfile() {
+  location.hash = '#/profile'
+}
 </script>
 
 <template>
@@ -483,8 +491,10 @@ function goAdmin() {
       </nav>
 
       <div class="kg-user">
-        <div class="kg-avatar">{{ helloName.slice(0, 1) }}</div>
-        <span class="kg-nick">{{ helloName }}</span>
+        <a class="kg-user-link" href="#/profile" @click.prevent="goProfile">
+          <div class="kg-avatar">{{ helloName.slice(0, 1) }}</div>
+          <span class="kg-nick">{{ helloName }}</span>
+        </a>
         <button class="kg-logout" type="button" @click="logout">退出</button>
       </div>
     </header>
@@ -988,6 +998,13 @@ function goAdmin() {
   .kg-toplinks a:hover { color: #fff; }
 
   .kg-user { display: flex; align-items: center; gap: 8px; flex: none; }
+  .kg-user-link {
+    display: flex; align-items: center; gap: 8px;
+    text-decoration: none; cursor: pointer;
+    border-radius: 999px; padding: 3px 6px 3px 3px;
+    transition: background .15s ease;
+  }
+  .kg-user-link:hover { background: rgba(255, 255, 255, 0.14); }
   .kg-avatar {
     width: 32px; height: 32px; border-radius: 50%;
     background: linear-gradient(150deg, var(--pink-soft), var(--pink));

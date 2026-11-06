@@ -33,10 +33,10 @@ public class AuthController {
 
     /**
      * 注册：POST /api/register
-     * 成功 200；账户已存在 409；参数不合法 400
+     * 成功 200 并自动登录（返回 token，前端可直接进首页）；账户已存在 409；参数不合法 400；写入失败 500
      */
     @PostMapping("/register")
-    public ResponseEntity<Result<Void>> register(@RequestBody AuthRequest req) {
+    public ResponseEntity<Result<Map<String, String>>> register(@RequestBody AuthRequest req) {
         String account = req.getAccount();
         String password = req.getPassword();
 
@@ -52,9 +52,28 @@ public class AuthController {
                     .body(Result.fail(409, "该账户已被注册 🐟"));
         }
 
-        // 写入（密码哈希 + 昵称）
-        userService.register(account, password, req.getNickname());
-        return ResponseEntity.ok(Result.ok("注册成功！欢迎加入鲨鱼音乐 🦈🎵"));
+        // 写入（事务 + 写后回查）；失败时明确报错，绝不让前端误以为注册成功
+        User registered;
+        try {
+            registered = userService.register(account, password, req.getNickname());
+        } catch (Exception e) {
+            return ResponseEntity.status(500)
+                    .body(Result.fail(500, "注册失败，数据未能保存，请稍后重试"));
+        }
+
+        if (registered == null) {
+            // 并发下可能刚被他人注册，兜底返回 409
+            return ResponseEntity.status(409)
+                    .body(Result.fail(409, "该账户已被注册 🐟"));
+        }
+
+        // 注册成功 → 自动登录，直接签发 token，前端可立即进入首页
+        String token = jwtUtil.generateToken(registered.getAccount());
+        Map<String, String> data = new HashMap<>();
+        data.put("token", token);
+        data.put("account", registered.getAccount());
+        data.put("nickname", registered.getNickname());
+        return ResponseEntity.ok(Result.ok("注册成功，已自动登录 🦈🎵", data));
     }
 
     /**

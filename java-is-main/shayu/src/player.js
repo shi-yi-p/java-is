@@ -11,7 +11,8 @@ export const player = reactive({
   index: -1,        /* 当前歌曲在队列中的下标 */
   playing: false,   /* 是否正在播放 */
   cur: 0,           /* 当前播放进度（秒） */
-  duration: 0       /* 当前歌曲总时长（秒） */
+  duration: 0,      /* 当前歌曲总时长（秒） */
+  mode: 'order'      /* 播放模式：list 列表循环 / one 单曲循环 / order 顺序播放（默认顺序，播完即停） */
 })
 
 /* 内部音频实例：整个应用只有一个 <audio> */
@@ -47,7 +48,14 @@ function toast(msg) {
 /* 歌曲音源地址：优先用后端给的 url / streamUrl，否则按本地曲库约定走 /api/stream */
 export function songUrl(s) {
   if (!s) return ''
-  return s.url || s.streamUrl || '/api/stream?id=' + encodeURIComponent(s.id)
+  // 有真实音源直链则直接用
+  if (s.url || s.streamUrl) return s.url || s.streamUrl
+  // 走合成音源兜底：带上 duration，让后端按歌曲真实时长合成（否则默认只有 30 秒）
+  let u = '/api/stream?id=' + encodeURIComponent(s.id)
+  if (s.duration && Number(s.duration) > 0) {
+    u += '&duration=' + encodeURIComponent(s.duration)
+  }
+  return u
 }
 
 /* 播放某首歌（可带播放队列） */
@@ -91,6 +99,20 @@ export function seek(sec) {
 
 export function next() {
   if (!player.queue.length) return
+  // 单曲循环：直接重播当前
+  if (player.mode === 'one') {
+    loadAndPlay()
+    return
+  }
+  // 顺序播放：已是最后一首 → 停止（不再从头循环，避免"单曲循环"错觉）
+  if (player.mode === 'order' && player.index >= player.queue.length - 1) {
+    player.playing = false
+    const a = ensureAudio()
+    a.pause()
+    player.cur = player.duration || 0
+    return
+  }
+  // 列表循环：取模切换到下一首
   player.index = (player.index + 1) % player.queue.length
   player.song = player.queue[player.index]
   loadAndPlay()
@@ -101,6 +123,14 @@ export function prev() {
   player.index = (player.index - 1 + player.queue.length) % player.queue.length
   player.song = player.queue[player.index]
   loadAndPlay()
+}
+
+/* 切换播放模式：list(列表循环) -> one(单曲循环) -> order(顺序播放) */
+export function cycleMode() {
+  const seq = ['list', 'one', 'order']
+  const i = seq.indexOf(player.mode)
+  player.mode = seq[(i + 1) % seq.length]
+  return player.mode
 }
 
 /* 时长格式化：222 -> "3:42"（组件内也会用到） */

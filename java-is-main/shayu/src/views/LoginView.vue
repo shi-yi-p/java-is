@@ -49,12 +49,17 @@ async function submit() {
     })
     const data = await res.json().catch(() => ({}))
     if (res.ok) {
-      toast(data.message || '注册成功！欢迎加入鲨鱼音乐 🦈🎵')
-      setTimeout(() => {
-        account.value = ''
-        password.value = ''
-        if (remember.value) remember.value = false
-      }, 700)
+      // 后端已自动登录并返回 token，直接持久化 + 跳转首页
+      const token = (data.data && data.data.token) || ''
+      if (token) {
+        try {
+          localStorage.setItem('shark_token', token)
+          localStorage.setItem('shark_account', account.value.trim())
+        } catch (e) {}
+      }
+      toast(data.message || '注册成功，正在进入首页 🦈🎵')
+      password.value = ''
+      setTimeout(() => { location.hash = '#/home' }, 600)
     } else if (res.status === 409) {
       toast(data.message || '该账户已被注册 🐟')
     } else {
@@ -84,7 +89,10 @@ async function login() {
     const data = await res.json().catch(() => ({}))
     if (res.ok) {
       const token = (data.data && data.data.token) || ''
-      try { localStorage.setItem('shark_token', token) } catch (e) {}
+      try {
+        localStorage.setItem('shark_token', token)
+        localStorage.setItem('shark_account', acc)
+      } catch (e) {}
       toast('登录成功，正在进入首页 🎶')
       password.value = ''
       /* 登录成功 → 跳转首页（hash 路由由 App.vue 接管） */

@@ -11,7 +11,7 @@
  Target Server Version : 80039 (8.0.39)
  File Encoding         : 65001
 
- Date: 05/11/2026 15:14:14
+ Date: 06/11/2026 15:15:20
 */
 
 SET NAMES utf8mb4;
@@ -36,7 +36,7 @@ CREATE TABLE `audiobook`  (
   `deleted` tinyint NOT NULL DEFAULT 0 COMMENT '逻辑删除：0-未删 1-已删',
   PRIMARY KEY (`id`) USING BTREE,
   UNIQUE INDEX `uk_title`(`title` ASC) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 15 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '听书精选' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 15 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '听书精选' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of audiobook
@@ -72,7 +72,7 @@ CREATE TABLE `channel`  (
   `deleted` tinyint NOT NULL DEFAULT 0 COMMENT '逻辑删除：0-未删 1-已删',
   PRIMARY KEY (`id`) USING BTREE,
   UNIQUE INDEX `uk_name`(`name` ASC) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 9 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '热门频道' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 9 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '热门频道' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of channel
@@ -100,7 +100,7 @@ CREATE TABLE `chart`  (
   `deleted` tinyint NOT NULL DEFAULT 0 COMMENT '逻辑删除：0-未删 1-已删',
   PRIMARY KEY (`id`) USING BTREE,
   UNIQUE INDEX `uk_name`(`name` ASC) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 5 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '热门榜单' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 5 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '热门榜单' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of chart
@@ -124,7 +124,7 @@ CREATE TABLE `chart_song`  (
   `deleted` tinyint NOT NULL DEFAULT 0 COMMENT '逻辑删除：0-未删 1-已删',
   PRIMARY KEY (`id`) USING BTREE,
   UNIQUE INDEX `uk_chart_rank`(`chart_id` ASC, `rank_no` ASC) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 21 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '榜单歌曲' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 21 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '榜单歌曲' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of chart_song
@@ -151,6 +151,24 @@ INSERT INTO `chart_song` VALUES (19, 4, 4, '蒸汽波渔港', 'VR镇渔民', 'up
 INSERT INTO `chart_song` VALUES (20, 4, 5, '后巷口琴师', '口琴老周', 'flat', 0);
 
 -- ----------------------------
+-- Table structure for chat_message
+-- ----------------------------
+DROP TABLE IF EXISTS `chat_message`;
+CREATE TABLE `chat_message`  (
+  `id` bigint NOT NULL AUTO_INCREMENT,
+  `user_id` bigint NOT NULL COMMENT '发送用户 id',
+  `content` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '消息内容',
+  `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `deleted` tinyint NOT NULL DEFAULT 0,
+  PRIMARY KEY (`id`) USING BTREE,
+  INDEX `idx_chat_time`(`create_time` ASC) USING BTREE
+) ENGINE = InnoDB AUTO_INCREMENT = 2 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '聊天室消息' ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Records of chat_message
+-- ----------------------------
+
+-- ----------------------------
 -- Table structure for douyin_hot_song
 -- ----------------------------
 DROP TABLE IF EXISTS `douyin_hot_song`;
@@ -170,41 +188,85 @@ CREATE TABLE `douyin_hot_song`  (
   PRIMARY KEY (`id`) USING BTREE,
   UNIQUE INDEX `uk_rank`(`rank_no` ASC) USING BTREE,
   INDEX `idx_hot`(`hot_value` ASC) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 31 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '抖音热歌榜' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 31 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '抖音热歌榜' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of douyin_hot_song
 -- ----------------------------
-INSERT INTO `douyin_hot_song` VALUES (1, 1, '晚风告白', '陈亦楠', '晚风告白', 215, 128000000, 'up', NULL, '2026-11-05 14:24:04', '2026-11-05 14:24:04', 0);
-INSERT INTO `douyin_hot_song` VALUES (2, 2, '若月亮没来', '于适', '若月亮没来', 232, 115000000, 'up', NULL, '2026-11-05 14:24:04', '2026-11-05 14:24:04', 0);
-INSERT INTO `douyin_hot_song` VALUES (3, 3, '小美满', '周深', '小美满', 224, 98000000, 'flat', NULL, '2026-11-05 14:24:04', '2026-11-05 14:24:04', 0);
-INSERT INTO `douyin_hot_song` VALUES (4, 4, '苹果香', '汪苏泷', '苹果香', 201, 91000000, 'up', NULL, '2026-11-05 14:24:04', '2026-11-05 14:24:04', 0);
-INSERT INTO `douyin_hot_song` VALUES (5, 5, 'APT.', 'Rosé & Bruno Mars', 'APT.', 173, 88000000, 'flat', NULL, '2026-11-05 14:24:04', '2026-11-05 14:24:04', 0);
-INSERT INTO `douyin_hot_song` VALUES (6, 6, '青花', '周传雄', '青花', 286, 76000000, 'up', NULL, '2026-11-05 14:24:04', '2026-11-05 14:24:04', 0);
-INSERT INTO `douyin_hot_song` VALUES (7, 7, '落日与晚风', '林忆莲', '落日与晚风', 248, 69000000, 'flat', NULL, '2026-11-05 14:24:04', '2026-11-05 14:24:04', 0);
-INSERT INTO `douyin_hot_song` VALUES (8, 8, '向云端', '刀郎', '山歌寥哉', 265, 64000000, 'flat', NULL, '2026-11-05 14:24:04', '2026-11-05 14:24:04', 0);
-INSERT INTO `douyin_hot_song` VALUES (9, 9, '罗刹海市', '刀郎', '山歌寥哉', 315, 61000000, 'flat', NULL, '2026-11-05 14:24:04', '2026-11-05 14:24:04', 0);
-INSERT INTO `douyin_hot_song` VALUES (10, 10, '海阔天空', 'Beyond', '乐与怒', 326, 57000000, 'up', NULL, '2026-11-05 14:24:04', '2026-11-05 14:24:04', 0);
-INSERT INTO `douyin_hot_song` VALUES (11, 11, '一路生花', '温奕心', '一路生花', 228, 52000000, 'flat', NULL, '2026-11-05 14:24:04', '2026-11-05 14:24:04', 0);
-INSERT INTO `douyin_hot_song` VALUES (12, 12, '我记得', '赵雷', '署前街少年', 294, 48000000, 'flat', NULL, '2026-11-05 14:24:04', '2026-11-05 14:24:04', 0);
-INSERT INTO `douyin_hot_song` VALUES (13, 13, '起风了', '买辣椒也用券', '起风了', 259, 45000000, 'up', NULL, '2026-11-05 14:24:04', '2026-11-05 14:24:04', 0);
-INSERT INTO `douyin_hot_song` VALUES (14, 14, '我会等', '张杰', '我会等', 236, 43000000, 'flat', NULL, '2026-11-05 14:24:04', '2026-11-05 14:24:04', 0);
-INSERT INTO `douyin_hot_song` VALUES (15, 15, '孤勇者', '陈奕迅', '孤勇者', 271, 41000000, 'flat', NULL, '2026-11-05 14:24:04', '2026-11-05 14:24:04', 0);
-INSERT INTO `douyin_hot_song` VALUES (16, 16, '笼', '林俊杰', '笼', 243, 38000000, 'up', NULL, '2026-11-05 14:24:04', '2026-11-05 14:24:04', 0);
-INSERT INTO `douyin_hot_song` VALUES (17, 17, '心动', '王菲', '王菲同名专辑', 217, 35000000, 'new', NULL, '2026-11-05 14:24:04', '2026-11-05 14:24:04', 0);
-INSERT INTO `douyin_hot_song` VALUES (18, 18, '如愿', '王菲', '如愿', 274, 33000000, 'flat', NULL, '2026-11-05 14:24:04', '2026-11-05 14:24:04', 0);
-INSERT INTO `douyin_hot_song` VALUES (19, 19, '人世间', '雷佳', '人世间', 288, 31000000, 'flat', NULL, '2026-11-05 14:24:04', '2026-11-05 14:24:04', 0);
-INSERT INTO `douyin_hot_song` VALUES (20, 20, '无名的人', '毛不易', '无名的人', 256, 29000000, 'new', NULL, '2026-11-05 14:24:04', '2026-11-05 14:24:04', 0);
-INSERT INTO `douyin_hot_song` VALUES (21, 21, '送你一朵小红花', '赵英俊', '送你一朵小红花', 240, 27000000, 'flat', NULL, '2026-11-05 14:24:04', '2026-11-05 14:24:04', 0);
-INSERT INTO `douyin_hot_song` VALUES (22, 22, '这世界那么多人', '莫文蔚', '这世界那么多人', 262, 25000000, 'up', NULL, '2026-11-05 14:24:04', '2026-11-05 14:24:04', 0);
-INSERT INTO `douyin_hot_song` VALUES (23, 23, '笼中鸟', '李荣浩', '笼中鸟', 231, 23000000, 'new', NULL, '2026-11-05 14:24:04', '2026-11-05 14:24:04', 0);
-INSERT INTO `douyin_hot_song` VALUES (24, 24, '大梦归', '周深', '兰香如故 影视原声带', 245, 21000000, 'new', NULL, '2026-11-05 14:24:04', '2026-11-05 14:24:04', 0);
-INSERT INTO `douyin_hot_song` VALUES (25, 25, '成都', '赵雷', '赵小雷', 312, 19000000, 'up', NULL, '2026-11-05 14:24:04', '2026-11-05 14:24:04', 0);
-INSERT INTO `douyin_hot_song` VALUES (26, 26, '鼓楼', '赵雷', '无法长大', 258, 17000000, 'flat', NULL, '2026-11-05 14:24:04', '2026-11-05 14:24:04', 0);
-INSERT INTO `douyin_hot_song` VALUES (27, 27, '茶汤', '郁可唯', '微加幸福', 223, 15000000, 'new', NULL, '2026-11-05 14:24:04', '2026-11-05 14:24:04', 0);
-INSERT INTO `douyin_hot_song` VALUES (28, 28, '态度', '田栩宁', 'X', 208, 13000000, 'new', NULL, '2026-11-05 14:24:04', '2026-11-05 14:24:04', 0);
-INSERT INTO `douyin_hot_song` VALUES (29, 29, '雨终曲', '宋雨琦', '雨终曲', 219, 11000000, 'new', NULL, '2026-11-05 14:24:04', '2026-11-05 14:24:04', 0);
-INSERT INTO `douyin_hot_song` VALUES (30, 30, '我记得', '房东的猫', 'New Boy', 204, 9000000, 'flat', NULL, '2026-11-05 14:24:04', '2026-11-05 14:24:04', 0);
+INSERT INTO `douyin_hot_song` VALUES (1, 1, '晚风告白', '陈亦楠', '晚风告白', 215, 128000000, 'up', NULL, '2026-11-05 14:24:04', '2026-11-06 14:50:04', 0);
+INSERT INTO `douyin_hot_song` VALUES (2, 2, '若月亮没来', '于适', '若月亮没来', 232, 115000000, 'up', NULL, '2026-11-05 14:24:04', '2026-11-06 14:50:04', 0);
+INSERT INTO `douyin_hot_song` VALUES (3, 3, '小美满', '周深', '小美满', 224, 98000000, 'flat', NULL, '2026-11-05 14:24:04', '2026-11-06 14:50:04', 0);
+INSERT INTO `douyin_hot_song` VALUES (4, 4, '苹果香', '汪苏泷', '苹果香', 201, 91000000, 'up', NULL, '2026-11-05 14:24:04', '2026-11-06 14:50:04', 0);
+INSERT INTO `douyin_hot_song` VALUES (5, 5, 'APT.', 'Rosé & Bruno Mars', 'APT.', 173, 88000000, 'flat', NULL, '2026-11-05 14:24:04', '2026-11-06 14:50:04', 0);
+INSERT INTO `douyin_hot_song` VALUES (6, 6, '青花', '周传雄', '青花', 286, 76000000, 'up', NULL, '2026-11-05 14:24:04', '2026-11-06 14:50:04', 0);
+INSERT INTO `douyin_hot_song` VALUES (7, 7, '落日与晚风', '林忆莲', '落日与晚风', 248, 69000000, 'flat', NULL, '2026-11-05 14:24:04', '2026-11-06 14:50:04', 0);
+INSERT INTO `douyin_hot_song` VALUES (8, 8, '向云端', '刀郎', '山歌寥哉', 265, 64000000, 'flat', NULL, '2026-11-05 14:24:04', '2026-11-06 14:50:04', 0);
+INSERT INTO `douyin_hot_song` VALUES (9, 9, '罗刹海市', '刀郎', '山歌寥哉', 315, 61000000, 'flat', NULL, '2026-11-05 14:24:04', '2026-11-06 14:50:04', 0);
+INSERT INTO `douyin_hot_song` VALUES (10, 10, '海阔天空', 'Beyond', '乐与怒', 326, 57000000, 'up', NULL, '2026-11-05 14:24:04', '2026-11-06 14:50:04', 0);
+INSERT INTO `douyin_hot_song` VALUES (11, 11, '一路生花', '温奕心', '一路生花', 228, 52000000, 'flat', NULL, '2026-11-05 14:24:04', '2026-11-06 14:50:04', 0);
+INSERT INTO `douyin_hot_song` VALUES (12, 12, '我记得', '赵雷', '署前街少年', 294, 48000000, 'flat', NULL, '2026-11-05 14:24:04', '2026-11-06 14:50:04', 0);
+INSERT INTO `douyin_hot_song` VALUES (13, 13, '起风了', '买辣椒也用券', '起风了', 259, 45000000, 'up', NULL, '2026-11-05 14:24:04', '2026-11-06 14:50:04', 0);
+INSERT INTO `douyin_hot_song` VALUES (14, 14, '我会等', '张杰', '我会等', 236, 43000000, 'flat', NULL, '2026-11-05 14:24:04', '2026-11-06 14:50:04', 0);
+INSERT INTO `douyin_hot_song` VALUES (15, 15, '孤勇者', '陈奕迅', '孤勇者', 271, 41000000, 'flat', NULL, '2026-11-05 14:24:04', '2026-11-06 14:50:04', 0);
+INSERT INTO `douyin_hot_song` VALUES (16, 16, '笼', '林俊杰', '笼', 243, 38000000, 'up', NULL, '2026-11-05 14:24:04', '2026-11-06 14:50:04', 0);
+INSERT INTO `douyin_hot_song` VALUES (17, 17, '心动', '王菲', '王菲同名专辑', 217, 35000000, 'new', NULL, '2026-11-05 14:24:04', '2026-11-06 14:50:04', 0);
+INSERT INTO `douyin_hot_song` VALUES (18, 18, '如愿', '王菲', '如愿', 274, 33000000, 'flat', NULL, '2026-11-05 14:24:04', '2026-11-06 14:50:04', 0);
+INSERT INTO `douyin_hot_song` VALUES (19, 19, '人世间', '雷佳', '人世间', 288, 31000000, 'flat', NULL, '2026-11-05 14:24:04', '2026-11-06 14:50:04', 0);
+INSERT INTO `douyin_hot_song` VALUES (20, 20, '无名的人', '毛不易', '无名的人', 256, 29000000, 'new', NULL, '2026-11-05 14:24:04', '2026-11-06 14:50:04', 0);
+INSERT INTO `douyin_hot_song` VALUES (21, 21, '送你一朵小红花', '赵英俊', '送你一朵小红花', 240, 27000000, 'flat', NULL, '2026-11-05 14:24:04', '2026-11-06 14:50:04', 0);
+INSERT INTO `douyin_hot_song` VALUES (22, 22, '这世界那么多人', '莫文蔚', '这世界那么多人', 262, 25000000, 'up', NULL, '2026-11-05 14:24:04', '2026-11-06 14:50:04', 0);
+INSERT INTO `douyin_hot_song` VALUES (23, 23, '笼中鸟', '李荣浩', '笼中鸟', 231, 23000000, 'new', NULL, '2026-11-05 14:24:04', '2026-11-06 14:50:04', 0);
+INSERT INTO `douyin_hot_song` VALUES (24, 24, '大梦归', '周深', '兰香如故 影视原声带', 245, 21000000, 'new', NULL, '2026-11-05 14:24:04', '2026-11-06 14:50:04', 0);
+INSERT INTO `douyin_hot_song` VALUES (25, 25, '成都', '赵雷', '赵小雷', 312, 19000000, 'up', NULL, '2026-11-05 14:24:04', '2026-11-06 14:50:04', 0);
+INSERT INTO `douyin_hot_song` VALUES (26, 26, '鼓楼', '赵雷', '无法长大', 258, 17000000, 'flat', NULL, '2026-11-05 14:24:04', '2026-11-06 14:50:04', 0);
+INSERT INTO `douyin_hot_song` VALUES (27, 27, '茶汤', '郁可唯', '微加幸福', 223, 15000000, 'new', NULL, '2026-11-05 14:24:04', '2026-11-06 14:50:04', 0);
+INSERT INTO `douyin_hot_song` VALUES (28, 28, '态度', '田栩宁', 'X', 208, 13000000, 'new', NULL, '2026-11-05 14:24:04', '2026-11-06 14:50:04', 0);
+INSERT INTO `douyin_hot_song` VALUES (29, 29, '雨终曲', '宋雨琦', '雨终曲', 219, 11000000, 'new', NULL, '2026-11-05 14:24:04', '2026-11-06 14:50:04', 0);
+INSERT INTO `douyin_hot_song` VALUES (30, 30, '我记得', '房东的猫', 'New Boy', 204, 9000000, 'flat', NULL, '2026-11-05 14:24:04', '2026-11-06 14:50:04', 0);
+
+-- ----------------------------
+-- Table structure for forum_comment
+-- ----------------------------
+DROP TABLE IF EXISTS `forum_comment`;
+CREATE TABLE `forum_comment`  (
+  `id` bigint NOT NULL AUTO_INCREMENT,
+  `post_id` bigint NOT NULL COMMENT '所属帖子 id',
+  `user_id` bigint NOT NULL COMMENT '评论用户 id',
+  `content` text CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '评论内容',
+  `likes` bigint NOT NULL DEFAULT 0 COMMENT '点赞数',
+  `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `deleted` tinyint NOT NULL DEFAULT 0,
+  PRIMARY KEY (`id`) USING BTREE,
+  INDEX `idx_comment_post`(`post_id` ASC) USING BTREE
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '论坛评论' ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Records of forum_comment
+-- ----------------------------
+
+-- ----------------------------
+-- Table structure for forum_post
+-- ----------------------------
+DROP TABLE IF EXISTS `forum_post`;
+CREATE TABLE `forum_post`  (
+  `id` bigint NOT NULL AUTO_INCREMENT,
+  `user_id` bigint NOT NULL COMMENT '发帖用户 id',
+  `title` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '帖子标题',
+  `content` text CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '帖子正文',
+  `category` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL DEFAULT 'music' COMMENT '帖子板块：music闲聊/song歌单/sing唱歌/story听歌故事/help求助',
+  `likes` bigint NOT NULL DEFAULT 0 COMMENT '点赞数',
+  `comments` bigint NOT NULL DEFAULT 0 COMMENT '评论数',
+  `views` bigint NOT NULL DEFAULT 0 COMMENT '浏览数',
+  `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `deleted` tinyint NOT NULL DEFAULT 0,
+  PRIMARY KEY (`id`) USING BTREE,
+  INDEX `idx_post_user`(`user_id` ASC) USING BTREE,
+  INDEX `idx_post_time`(`create_time` ASC) USING BTREE
+) ENGINE = InnoDB AUTO_INCREMENT = 4 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '论坛帖子' ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Records of forum_post
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for kugou_hot_song
@@ -226,41 +288,41 @@ CREATE TABLE `kugou_hot_song`  (
   PRIMARY KEY (`id`) USING BTREE,
   UNIQUE INDEX `uk_rank`(`rank_no` ASC) USING BTREE,
   INDEX `idx_hot`(`hot_value` ASC) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 31 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '酷狗热歌榜' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 31 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '酷狗热歌榜' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of kugou_hot_song
 -- ----------------------------
-INSERT INTO `kugou_hot_song` VALUES (1, 1, '晴天', '周杰伦', '叶惠美', 269, 156000000, 'up', NULL, '2026-11-05 14:40:59', '2026-11-05 14:40:59', 0);
-INSERT INTO `kugou_hot_song` VALUES (2, 2, '稻香', '周杰伦', '魔杰座', 223, 138000000, 'flat', NULL, '2026-11-05 14:40:59', '2026-11-05 14:40:59', 0);
-INSERT INTO `kugou_hot_song` VALUES (3, 3, '青花瓷', '周杰伦', '我很忙', 239, 121000000, 'up', NULL, '2026-11-05 14:40:59', '2026-11-05 14:40:59', 0);
-INSERT INTO `kugou_hot_song` VALUES (4, 4, '江南', '林俊杰', '第二天堂', 267, 132000000, 'flat', NULL, '2026-11-05 14:40:59', '2026-11-05 14:40:59', 0);
-INSERT INTO `kugou_hot_song` VALUES (5, 5, '演员', '薛之谦', '意外', 261, 108000000, 'up', NULL, '2026-11-05 14:40:59', '2026-11-05 14:40:59', 0);
-INSERT INTO `kugou_hot_song` VALUES (6, 6, '十年', '陈奕迅', '黑·白·灰', 246, 98000000, 'flat', NULL, '2026-11-05 14:40:59', '2026-11-05 14:40:59', 0);
-INSERT INTO `kugou_hot_song` VALUES (7, 7, '浮夸', '陈奕迅', 'U87', 267, 92000000, 'up', NULL, '2026-11-05 14:40:59', '2026-11-05 14:40:59', 0);
-INSERT INTO `kugou_hot_song` VALUES (8, 8, '富士山下', '陈奕迅', 'What\'s Going On...?', 285, 85000000, 'flat', NULL, '2026-11-05 14:40:59', '2026-11-05 14:40:59', 0);
-INSERT INTO `kugou_hot_song` VALUES (9, 9, '吻别', '张学友', '吻别', 278, 88000000, 'up', NULL, '2026-11-05 14:40:59', '2026-11-05 14:40:59', 0);
-INSERT INTO `kugou_hot_song` VALUES (10, 10, '一千个伤心的理由', '张学友', '真爱新曲+精选', 269, 76000000, 'flat', NULL, '2026-11-05 14:40:59', '2026-11-05 14:40:59', 0);
-INSERT INTO `kugou_hot_song` VALUES (11, 11, '泡沫', 'G.E.M.邓紫棋', 'Xposed', 271, 82000000, 'up', NULL, '2026-11-05 14:40:59', '2026-11-05 14:40:59', 0);
-INSERT INTO `kugou_hot_song` VALUES (12, 12, '光年之外', 'G.E.M.邓紫棋', '光年之外', 235, 74000000, 'flat', NULL, '2026-11-05 14:40:59', '2026-11-05 14:40:59', 0);
-INSERT INTO `kugou_hot_song` VALUES (13, 13, '海阔天空', 'Beyond', '乐与怒', 326, 79000000, 'up', NULL, '2026-11-05 14:40:59', '2026-11-05 14:40:59', 0);
-INSERT INTO `kugou_hot_song` VALUES (14, 14, '光辉岁月', 'Beyond', '命运派对', 302, 71000000, 'flat', NULL, '2026-11-05 14:40:59', '2026-11-05 14:40:59', 0);
-INSERT INTO `kugou_hot_song` VALUES (15, 15, '素颜', '许嵩、何曼婷', '寻雾启示', 238, 66000000, 'up', NULL, '2026-11-05 14:40:59', '2026-11-05 14:40:59', 0);
-INSERT INTO `kugou_hot_song` VALUES (16, 16, '南山南', '马頔', '孤鸟的歌', 305, 58000000, 'flat', NULL, '2026-11-05 14:40:59', '2026-11-05 14:40:59', 0);
-INSERT INTO `kugou_hot_song` VALUES (17, 17, '成都', '赵雷', '赵小雷', 312, 61000000, 'up', NULL, '2026-11-05 14:40:59', '2026-11-05 14:40:59', 0);
-INSERT INTO `kugou_hot_song` VALUES (18, 18, '小幸运', '田馥甄', '小幸运', 267, 56000000, 'flat', NULL, '2026-11-05 14:40:59', '2026-11-05 14:40:59', 0);
-INSERT INTO `kugou_hot_song` VALUES (19, 19, '倔强', '五月天', '神的孩子都在跳舞', 258, 53000000, 'up', NULL, '2026-11-05 14:40:59', '2026-11-05 14:40:59', 0);
-INSERT INTO `kugou_hot_song` VALUES (20, 20, '突然好想你', '五月天', '后青春期的诗', 271, 51000000, 'flat', NULL, '2026-11-05 14:40:59', '2026-11-05 14:40:59', 0);
-INSERT INTO `kugou_hot_song` VALUES (21, 21, '告白气球', '周杰伦', '周杰伦的床边故事', 255, 62000000, 'new', NULL, '2026-11-05 14:40:59', '2026-11-05 14:40:59', 0);
-INSERT INTO `kugou_hot_song` VALUES (22, 22, '七里香', '周杰伦', '七里香', 299, 54000000, 'up', NULL, '2026-11-05 14:40:59', '2026-11-05 14:40:59', 0);
-INSERT INTO `kugou_hot_song` VALUES (23, 23, '不为谁而作的歌', '林俊杰', '和自己对话', 280, 49000000, 'flat', NULL, '2026-11-05 14:40:59', '2026-11-05 14:40:59', 0);
-INSERT INTO `kugou_hot_song` VALUES (24, 24, '她说', '林俊杰', '她说 概念自选辑', 258, 46000000, 'up', NULL, '2026-11-05 14:40:59', '2026-11-05 14:40:59', 0);
-INSERT INTO `kugou_hot_song` VALUES (25, 25, '红豆', '王菲', '唱游', 264, 44000000, 'flat', NULL, '2026-11-05 14:40:59', '2026-11-05 14:40:59', 0);
-INSERT INTO `kugou_hot_song` VALUES (26, 26, '容易受伤的女人', '王菲', 'Coming Home', 259, 41000000, 'new', NULL, '2026-11-05 14:40:59', '2026-11-05 14:40:59', 0);
-INSERT INTO `kugou_hot_song` VALUES (27, 27, '不将就', '李荣浩', '有理想', 302, 39000000, 'up', NULL, '2026-11-05 14:40:59', '2026-11-05 14:40:59', 0);
-INSERT INTO `kugou_hot_song` VALUES (28, 28, '年少有为', '李荣浩', '年少有为', 276, 37000000, 'flat', NULL, '2026-11-05 14:40:59', '2026-11-05 14:40:59', 0);
-INSERT INTO `kugou_hot_song` VALUES (29, 29, '体面', '于文文', '体面', 265, 35000000, 'new', NULL, '2026-11-05 14:40:59', '2026-11-05 14:40:59', 0);
-INSERT INTO `kugou_hot_song` VALUES (30, 30, '往后余生', '马良', '往后余生', 249, 33000000, 'flat', NULL, '2026-11-05 14:40:59', '2026-11-05 14:40:59', 0);
+INSERT INTO `kugou_hot_song` VALUES (1, 1, '晴天', '周杰伦', '叶惠美', 269, 156000000, 'up', NULL, '2026-11-05 14:40:59', '2026-11-06 14:50:04', 0);
+INSERT INTO `kugou_hot_song` VALUES (2, 2, '稻香', '周杰伦', '魔杰座', 223, 138000000, 'flat', NULL, '2026-11-05 14:40:59', '2026-11-06 14:50:04', 0);
+INSERT INTO `kugou_hot_song` VALUES (3, 3, '青花瓷', '周杰伦', '我很忙', 239, 121000000, 'up', NULL, '2026-11-05 14:40:59', '2026-11-06 14:50:04', 0);
+INSERT INTO `kugou_hot_song` VALUES (4, 4, '江南', '林俊杰', '第二天堂', 267, 132000000, 'flat', NULL, '2026-11-05 14:40:59', '2026-11-06 14:50:04', 0);
+INSERT INTO `kugou_hot_song` VALUES (5, 5, '演员', '薛之谦', '意外', 261, 108000000, 'up', NULL, '2026-11-05 14:40:59', '2026-11-06 14:50:04', 0);
+INSERT INTO `kugou_hot_song` VALUES (6, 6, '十年', '陈奕迅', '黑·白·灰', 246, 98000000, 'flat', NULL, '2026-11-05 14:40:59', '2026-11-06 14:50:04', 0);
+INSERT INTO `kugou_hot_song` VALUES (7, 7, '浮夸', '陈奕迅', 'U87', 267, 92000000, 'up', NULL, '2026-11-05 14:40:59', '2026-11-06 14:50:04', 0);
+INSERT INTO `kugou_hot_song` VALUES (8, 8, '富士山下', '陈奕迅', 'What\'s Going On...?', 285, 85000000, 'flat', NULL, '2026-11-05 14:40:59', '2026-11-06 14:50:04', 0);
+INSERT INTO `kugou_hot_song` VALUES (9, 9, '吻别', '张学友', '吻别', 278, 88000000, 'up', NULL, '2026-11-05 14:40:59', '2026-11-06 14:50:04', 0);
+INSERT INTO `kugou_hot_song` VALUES (10, 10, '一千个伤心的理由', '张学友', '真爱新曲+精选', 269, 76000000, 'flat', NULL, '2026-11-05 14:40:59', '2026-11-06 14:50:04', 0);
+INSERT INTO `kugou_hot_song` VALUES (11, 11, '泡沫', 'G.E.M.邓紫棋', 'Xposed', 271, 82000000, 'up', NULL, '2026-11-05 14:40:59', '2026-11-06 14:50:04', 0);
+INSERT INTO `kugou_hot_song` VALUES (12, 12, '光年之外', 'G.E.M.邓紫棋', '光年之外', 235, 74000000, 'flat', NULL, '2026-11-05 14:40:59', '2026-11-06 14:50:04', 0);
+INSERT INTO `kugou_hot_song` VALUES (13, 13, '海阔天空', 'Beyond', '乐与怒', 326, 79000000, 'up', NULL, '2026-11-05 14:40:59', '2026-11-06 14:50:04', 0);
+INSERT INTO `kugou_hot_song` VALUES (14, 14, '光辉岁月', 'Beyond', '命运派对', 302, 71000000, 'flat', NULL, '2026-11-05 14:40:59', '2026-11-06 14:50:04', 0);
+INSERT INTO `kugou_hot_song` VALUES (15, 15, '素颜', '许嵩、何曼婷', '寻雾启示', 238, 66000000, 'up', NULL, '2026-11-05 14:40:59', '2026-11-06 14:50:04', 0);
+INSERT INTO `kugou_hot_song` VALUES (16, 16, '南山南', '马頔', '孤鸟的歌', 305, 58000000, 'flat', NULL, '2026-11-05 14:40:59', '2026-11-06 14:50:04', 0);
+INSERT INTO `kugou_hot_song` VALUES (17, 17, '成都', '赵雷', '赵小雷', 312, 61000000, 'up', NULL, '2026-11-05 14:40:59', '2026-11-06 14:50:04', 0);
+INSERT INTO `kugou_hot_song` VALUES (18, 18, '小幸运', '田馥甄', '小幸运', 267, 56000000, 'flat', NULL, '2026-11-05 14:40:59', '2026-11-06 14:50:04', 0);
+INSERT INTO `kugou_hot_song` VALUES (19, 19, '倔强', '五月天', '神的孩子都在跳舞', 258, 53000000, 'up', NULL, '2026-11-05 14:40:59', '2026-11-06 14:50:04', 0);
+INSERT INTO `kugou_hot_song` VALUES (20, 20, '突然好想你', '五月天', '后青春期的诗', 271, 51000000, 'flat', NULL, '2026-11-05 14:40:59', '2026-11-06 14:50:04', 0);
+INSERT INTO `kugou_hot_song` VALUES (21, 21, '告白气球', '周杰伦', '周杰伦的床边故事', 255, 62000000, 'new', NULL, '2026-11-05 14:40:59', '2026-11-06 14:50:04', 0);
+INSERT INTO `kugou_hot_song` VALUES (22, 22, '七里香', '周杰伦', '七里香', 299, 54000000, 'up', NULL, '2026-11-05 14:40:59', '2026-11-06 14:50:04', 0);
+INSERT INTO `kugou_hot_song` VALUES (23, 23, '不为谁而作的歌', '林俊杰', '和自己对话', 280, 49000000, 'flat', NULL, '2026-11-05 14:40:59', '2026-11-06 14:50:04', 0);
+INSERT INTO `kugou_hot_song` VALUES (24, 24, '她说', '林俊杰', '她说 概念自选辑', 258, 46000000, 'up', NULL, '2026-11-05 14:40:59', '2026-11-06 14:50:04', 0);
+INSERT INTO `kugou_hot_song` VALUES (25, 25, '红豆', '王菲', '唱游', 264, 44000000, 'flat', NULL, '2026-11-05 14:40:59', '2026-11-06 14:50:04', 0);
+INSERT INTO `kugou_hot_song` VALUES (26, 26, '容易受伤的女人', '王菲', 'Coming Home', 259, 41000000, 'new', NULL, '2026-11-05 14:40:59', '2026-11-06 14:50:04', 0);
+INSERT INTO `kugou_hot_song` VALUES (27, 27, '不将就', '李荣浩', '有理想', 302, 39000000, 'up', NULL, '2026-11-05 14:40:59', '2026-11-06 14:50:04', 0);
+INSERT INTO `kugou_hot_song` VALUES (28, 28, '年少有为', '李荣浩', '年少有为', 276, 37000000, 'flat', NULL, '2026-11-05 14:40:59', '2026-11-06 14:50:04', 0);
+INSERT INTO `kugou_hot_song` VALUES (29, 29, '体面', '于文文', '体面', 265, 35000000, 'new', NULL, '2026-11-05 14:40:59', '2026-11-06 14:50:04', 0);
+INSERT INTO `kugou_hot_song` VALUES (30, 30, '往后余生', '马良', '往后余生', 249, 33000000, 'flat', NULL, '2026-11-05 14:40:59', '2026-11-06 14:50:04', 0);
 
 -- ----------------------------
 -- Table structure for netease_hot_song
@@ -282,41 +344,61 @@ CREATE TABLE `netease_hot_song`  (
   PRIMARY KEY (`id`) USING BTREE,
   UNIQUE INDEX `uk_rank`(`rank_no` ASC) USING BTREE,
   INDEX `idx_hot`(`hot_value` ASC) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 31 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '网易云热歌榜' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 31 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '网易云热歌榜' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of netease_hot_song
 -- ----------------------------
-INSERT INTO `netease_hot_song` VALUES (1, 1, '起风了', '买辣椒也用券', '起风了', 259, 152000000, 'up', NULL, '2026-11-05 14:47:56', '2026-11-05 14:47:56', 0);
-INSERT INTO `netease_hot_song` VALUES (2, 2, '安和桥', '宋冬野', '安和桥北', 272, 143000000, 'flat', NULL, '2026-11-05 14:47:56', '2026-11-05 14:47:56', 0);
-INSERT INTO `netease_hot_song` VALUES (3, 3, '理想', '赵雷', '无法长大', 324, 136000000, 'up', NULL, '2026-11-05 14:47:56', '2026-11-05 14:47:56', 0);
-INSERT INTO `netease_hot_song` VALUES (4, 4, '成都', '赵雷', '赵小雷', 312, 129000000, 'flat', NULL, '2026-11-05 14:47:56', '2026-11-05 14:47:56', 0);
-INSERT INTO `netease_hot_song` VALUES (5, 5, '小半', '陈粒', '小梦大半', 275, 122000000, 'up', NULL, '2026-11-05 14:47:56', '2026-11-05 14:47:56', 0);
-INSERT INTO `netease_hot_song` VALUES (6, 6, '易燃易爆炸', '陈粒', '如也', 254, 116000000, 'flat', NULL, '2026-11-05 14:47:56', '2026-11-05 14:47:56', 0);
-INSERT INTO `netease_hot_song` VALUES (7, 7, '妙龄童', '陈粒', '如也', 241, 109000000, 'up', NULL, '2026-11-05 14:47:56', '2026-11-05 14:47:56', 0);
-INSERT INTO `netease_hot_song` VALUES (8, 8, '云烟成雨', '房东的猫', '房东的猫', 251, 103000000, 'flat', NULL, '2026-11-05 14:47:56', '2026-11-05 14:47:56', 0);
-INSERT INTO `netease_hot_song` VALUES (9, 9, '美好事物', '房东的猫', '美好事物', 262, 98000000, 'up', NULL, '2026-11-05 14:47:56', '2026-11-05 14:47:56', 0);
-INSERT INTO `netease_hot_song` VALUES (10, 10, '水星记', '郭顶', '飞行器的执行周期', 285, 94000000, 'flat', NULL, '2026-11-05 14:47:56', '2026-11-05 14:47:56', 0);
-INSERT INTO `netease_hot_song` VALUES (11, 11, '凄美地', '郭顶', '飞行器的执行周期', 289, 90000000, 'up', NULL, '2026-11-05 14:47:56', '2026-11-05 14:47:56', 0);
-INSERT INTO `netease_hot_song` VALUES (12, 12, '不染', '毛不易', '香蜜沉沉烬如霜', 273, 86000000, 'flat', NULL, '2026-11-05 14:47:56', '2026-11-05 14:47:56', 0);
-INSERT INTO `netease_hot_song` VALUES (13, 13, '消愁', '毛不易', '平凡的一天', 294, 83000000, 'up', NULL, '2026-11-05 14:47:56', '2026-11-05 14:47:56', 0);
-INSERT INTO `netease_hot_song` VALUES (14, 14, '像我这样的人', '毛不易', '平凡的一天', 262, 80000000, 'flat', NULL, '2026-11-05 14:47:56', '2026-11-05 14:47:56', 0);
-INSERT INTO `netease_hot_song` VALUES (15, 15, '往后余生', '马良', '往后余生', 249, 76000000, 'flat', NULL, '2026-11-05 14:47:56', '2026-11-05 14:47:56', 0);
-INSERT INTO `netease_hot_song` VALUES (16, 16, '理想三旬', '陈鸿宇', '浓烟下的诗歌电台', 302, 73000000, 'up', NULL, '2026-11-05 14:47:56', '2026-11-05 14:47:56', 0);
-INSERT INTO `netease_hot_song` VALUES (17, 17, '借我', '谢春花', '算云烟', 256, 70000000, 'flat', NULL, '2026-11-05 14:47:56', '2026-11-05 14:47:56', 0);
-INSERT INTO `netease_hot_song` VALUES (18, 18, '春风十里', '鹿先森乐队', '所有的酒，都不如你', 265, 67000000, 'up', NULL, '2026-11-05 14:47:56', '2026-11-05 14:47:56', 0);
-INSERT INTO `netease_hot_song` VALUES (19, 19, '鸽子', '宋冬野', '安和桥北', 261, 64000000, 'flat', NULL, '2026-11-05 14:47:56', '2026-11-05 14:47:56', 0);
-INSERT INTO `netease_hot_song` VALUES (20, 20, '董小姐', '宋冬野', '安和桥北', 278, 61000000, 'up', NULL, '2026-11-05 14:47:56', '2026-11-05 14:47:56', 0);
-INSERT INTO `netease_hot_song` VALUES (21, 21, '像我这样的年纪', '一支榴莲', '像我这样的年纪', 249, 58000000, 'new', NULL, '2026-11-05 14:47:56', '2026-11-05 14:47:56', 0);
-INSERT INTO `netease_hot_song` VALUES (22, 22, '出现又离开', '梁博', '梁博', 324, 55000000, 'up', NULL, '2026-11-05 14:47:56', '2026-11-05 14:47:56', 0);
-INSERT INTO `netease_hot_song` VALUES (23, 23, '男孩', '梁博', '梁博', 291, 52000000, 'flat', NULL, '2026-11-05 14:47:56', '2026-11-05 14:47:56', 0);
-INSERT INTO `netease_hot_song` VALUES (24, 24, '刻在我心底的名字', '卢广仲', '刻在我心底的名字', 288, 49000000, 'up', NULL, '2026-11-05 14:47:56', '2026-11-05 14:47:56', 0);
-INSERT INTO `netease_hot_song` VALUES (25, 25, '归途有风', '海来阿木', '归途有风', 246, 46000000, 'new', NULL, '2026-11-05 14:47:56', '2026-11-05 14:47:56', 0);
-INSERT INTO `netease_hot_song` VALUES (26, 26, '醒不来的梦', '回小仙', '醒不来的梦', 258, 43000000, 'up', NULL, '2026-11-05 14:47:56', '2026-11-05 14:47:56', 0);
-INSERT INTO `netease_hot_song` VALUES (27, 27, '错位时空', '艾辰', '错位时空', 268, 40000000, 'flat', NULL, '2026-11-05 14:47:56', '2026-11-05 14:47:56', 0);
-INSERT INTO `netease_hot_song` VALUES (28, 28, '我会等', '承桓', '我会等', 251, 37000000, 'new', NULL, '2026-11-05 14:47:56', '2026-11-05 14:47:56', 0);
-INSERT INTO `netease_hot_song` VALUES (29, 29, '善变', '王靖雯', '善变', 247, 34000000, 'up', NULL, '2026-11-05 14:47:56', '2026-11-05 14:47:56', 0);
-INSERT INTO `netease_hot_song` VALUES (30, 30, '就忘了吧', '1K', '就忘了吧', 253, 31000000, 'flat', NULL, '2026-11-05 14:47:56', '2026-11-05 14:47:56', 0);
+INSERT INTO `netease_hot_song` VALUES (1, 1, '起风了', '买辣椒也用券', '起风了', 259, 152000000, 'up', NULL, '2026-11-05 14:47:56', '2026-11-06 14:50:04', 0);
+INSERT INTO `netease_hot_song` VALUES (2, 2, '安和桥', '宋冬野', '安和桥北', 272, 143000000, 'flat', NULL, '2026-11-05 14:47:56', '2026-11-06 14:50:04', 0);
+INSERT INTO `netease_hot_song` VALUES (3, 3, '理想', '赵雷', '无法长大', 324, 136000000, 'up', NULL, '2026-11-05 14:47:56', '2026-11-06 14:50:04', 0);
+INSERT INTO `netease_hot_song` VALUES (4, 4, '成都', '赵雷', '赵小雷', 312, 129000000, 'flat', NULL, '2026-11-05 14:47:56', '2026-11-06 14:50:04', 0);
+INSERT INTO `netease_hot_song` VALUES (5, 5, '小半', '陈粒', '小梦大半', 275, 122000000, 'up', NULL, '2026-11-05 14:47:56', '2026-11-06 14:50:04', 0);
+INSERT INTO `netease_hot_song` VALUES (6, 6, '易燃易爆炸', '陈粒', '如也', 254, 116000000, 'flat', NULL, '2026-11-05 14:47:56', '2026-11-06 14:50:04', 0);
+INSERT INTO `netease_hot_song` VALUES (7, 7, '妙龄童', '陈粒', '如也', 241, 109000000, 'up', NULL, '2026-11-05 14:47:56', '2026-11-06 14:50:04', 0);
+INSERT INTO `netease_hot_song` VALUES (8, 8, '云烟成雨', '房东的猫', '房东的猫', 251, 103000000, 'flat', NULL, '2026-11-05 14:47:56', '2026-11-06 14:50:04', 0);
+INSERT INTO `netease_hot_song` VALUES (9, 9, '美好事物', '房东的猫', '美好事物', 262, 98000000, 'up', NULL, '2026-11-05 14:47:56', '2026-11-06 14:50:04', 0);
+INSERT INTO `netease_hot_song` VALUES (10, 10, '水星记', '郭顶', '飞行器的执行周期', 285, 94000000, 'flat', NULL, '2026-11-05 14:47:56', '2026-11-06 14:50:04', 0);
+INSERT INTO `netease_hot_song` VALUES (11, 11, '凄美地', '郭顶', '飞行器的执行周期', 289, 90000000, 'up', NULL, '2026-11-05 14:47:56', '2026-11-06 14:50:04', 0);
+INSERT INTO `netease_hot_song` VALUES (12, 12, '不染', '毛不易', '香蜜沉沉烬如霜', 273, 86000000, 'flat', NULL, '2026-11-05 14:47:56', '2026-11-06 14:50:04', 0);
+INSERT INTO `netease_hot_song` VALUES (13, 13, '消愁', '毛不易', '平凡的一天', 294, 83000000, 'up', NULL, '2026-11-05 14:47:56', '2026-11-06 14:50:04', 0);
+INSERT INTO `netease_hot_song` VALUES (14, 14, '像我这样的人', '毛不易', '平凡的一天', 262, 80000000, 'flat', NULL, '2026-11-05 14:47:56', '2026-11-06 14:50:04', 0);
+INSERT INTO `netease_hot_song` VALUES (15, 15, '往后余生', '马良', '往后余生', 249, 76000000, 'flat', NULL, '2026-11-05 14:47:56', '2026-11-06 14:50:04', 0);
+INSERT INTO `netease_hot_song` VALUES (16, 16, '理想三旬', '陈鸿宇', '浓烟下的诗歌电台', 302, 73000000, 'up', NULL, '2026-11-05 14:47:56', '2026-11-06 14:50:04', 0);
+INSERT INTO `netease_hot_song` VALUES (17, 17, '借我', '谢春花', '算云烟', 256, 70000000, 'flat', NULL, '2026-11-05 14:47:56', '2026-11-06 14:50:04', 0);
+INSERT INTO `netease_hot_song` VALUES (18, 18, '春风十里', '鹿先森乐队', '所有的酒，都不如你', 265, 67000000, 'up', NULL, '2026-11-05 14:47:56', '2026-11-06 14:50:04', 0);
+INSERT INTO `netease_hot_song` VALUES (19, 19, '鸽子', '宋冬野', '安和桥北', 261, 64000000, 'flat', NULL, '2026-11-05 14:47:56', '2026-11-06 14:50:04', 0);
+INSERT INTO `netease_hot_song` VALUES (20, 20, '董小姐', '宋冬野', '安和桥北', 278, 61000000, 'up', NULL, '2026-11-05 14:47:56', '2026-11-06 14:50:04', 0);
+INSERT INTO `netease_hot_song` VALUES (21, 21, '像我这样的年纪', '一支榴莲', '像我这样的年纪', 249, 58000000, 'new', NULL, '2026-11-05 14:47:56', '2026-11-06 14:50:04', 0);
+INSERT INTO `netease_hot_song` VALUES (22, 22, '出现又离开', '梁博', '梁博', 324, 55000000, 'up', NULL, '2026-11-05 14:47:56', '2026-11-06 14:50:04', 0);
+INSERT INTO `netease_hot_song` VALUES (23, 23, '男孩', '梁博', '梁博', 291, 52000000, 'flat', NULL, '2026-11-05 14:47:56', '2026-11-06 14:50:04', 0);
+INSERT INTO `netease_hot_song` VALUES (24, 24, '刻在我心底的名字', '卢广仲', '刻在我心底的名字', 288, 49000000, 'up', NULL, '2026-11-05 14:47:56', '2026-11-06 14:50:04', 0);
+INSERT INTO `netease_hot_song` VALUES (25, 25, '归途有风', '海来阿木', '归途有风', 246, 46000000, 'new', NULL, '2026-11-05 14:47:56', '2026-11-06 14:50:04', 0);
+INSERT INTO `netease_hot_song` VALUES (26, 26, '醒不来的梦', '回小仙', '醒不来的梦', 258, 43000000, 'up', NULL, '2026-11-05 14:47:56', '2026-11-06 14:50:04', 0);
+INSERT INTO `netease_hot_song` VALUES (27, 27, '错位时空', '艾辰', '错位时空', 268, 40000000, 'flat', NULL, '2026-11-05 14:47:56', '2026-11-06 14:50:04', 0);
+INSERT INTO `netease_hot_song` VALUES (28, 28, '我会等', '承桓', '我会等', 251, 37000000, 'new', NULL, '2026-11-05 14:47:56', '2026-11-06 14:50:04', 0);
+INSERT INTO `netease_hot_song` VALUES (29, 29, '善变', '王靖雯', '善变', 247, 34000000, 'up', NULL, '2026-11-05 14:47:56', '2026-11-06 14:50:04', 0);
+INSERT INTO `netease_hot_song` VALUES (30, 30, '就忘了吧', '1K', '就忘了吧', 253, 31000000, 'flat', NULL, '2026-11-05 14:47:56', '2026-11-06 14:50:04', 0);
+
+-- ----------------------------
+-- Table structure for play_history
+-- ----------------------------
+DROP TABLE IF EXISTS `play_history`;
+CREATE TABLE `play_history`  (
+  `id` bigint NOT NULL AUTO_INCREMENT COMMENT '主键',
+  `user_id` bigint NOT NULL COMMENT '用户 id',
+  `song_id` bigint NOT NULL COMMENT '歌曲 id',
+  `duration` int NOT NULL DEFAULT 0 COMMENT '本次收听的秒数',
+  `played_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '播放时间',
+  `deleted` tinyint NOT NULL DEFAULT 0 COMMENT '逻辑删除：0-未删 1-已删',
+  PRIMARY KEY (`id`) USING BTREE,
+  INDEX `idx_user_time`(`user_id` ASC, `played_at` ASC) USING BTREE,
+  INDEX `idx_song`(`song_id` ASC) USING BTREE
+) ENGINE = InnoDB AUTO_INCREMENT = 4 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '用户播放历史表' ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Records of play_history
+-- ----------------------------
 
 -- ----------------------------
 -- Table structure for playlist
@@ -336,7 +418,7 @@ CREATE TABLE `playlist`  (
   `deleted` tinyint NOT NULL DEFAULT 0 COMMENT '逻辑删除：0-未删 1-已删',
   PRIMARY KEY (`id`) USING BTREE,
   UNIQUE INDEX `uk_title`(`title` ASC) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 9 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '精选歌单' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 9 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '精选歌单' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of playlist
@@ -370,41 +452,41 @@ CREATE TABLE `qq_hot_song`  (
   PRIMARY KEY (`id`) USING BTREE,
   UNIQUE INDEX `uk_rank`(`rank_no` ASC) USING BTREE,
   INDEX `idx_hot`(`hot_value` ASC) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 31 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = 'QQ音乐热歌榜' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 31 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = 'QQ音乐热歌榜' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of qq_hot_song
 -- ----------------------------
-INSERT INTO `qq_hot_song` VALUES (1, 1, '发如雪', '周杰伦', '十一月的萧邦', 299, 168000000, 'up', NULL, '2026-11-05 14:47:56', '2026-11-05 14:47:56', 0);
-INSERT INTO `qq_hot_song` VALUES (2, 2, '我不难过', '孙燕姿', '未完成', 320, 152000000, 'up', NULL, '2026-11-05 14:47:56', '2026-11-05 14:47:56', 0);
-INSERT INTO `qq_hot_song` VALUES (3, 3, '演员', '薛之谦', '意外', 261, 145000000, 'flat', NULL, '2026-11-05 14:47:56', '2026-11-05 14:47:56', 0);
-INSERT INTO `qq_hot_song` VALUES (4, 4, '我怀念的', '孙燕姿', '逆光', 289, 138000000, 'up', NULL, '2026-11-05 14:47:56', '2026-11-05 14:47:56', 0);
-INSERT INTO `qq_hot_song` VALUES (5, 5, '天龙八部之宿敌', '许嵩', '苏格拉没有底', 264, 131000000, 'flat', NULL, '2026-11-05 14:47:56', '2026-11-05 14:47:56', 0);
-INSERT INTO `qq_hot_song` VALUES (6, 6, '季候风', '王菲', '讨好自己', 276, 124000000, 'up', NULL, '2026-11-05 14:47:56', '2026-11-05 14:47:56', 0);
-INSERT INTO `qq_hot_song` VALUES (7, 7, '雨爱', '杨丞琳', '半熟宣言', 260, 118000000, 'flat', NULL, '2026-11-05 14:47:56', '2026-11-05 14:47:56', 0);
-INSERT INTO `qq_hot_song` VALUES (8, 8, '情歌', '梁静茹', '静茹&情歌', 260, 112000000, 'up', NULL, '2026-11-05 14:47:56', '2026-11-05 14:47:56', 0);
-INSERT INTO `qq_hot_song` VALUES (9, 9, '幻听', '许嵩', '寻雾启示', 273, 106000000, 'flat', NULL, '2026-11-05 14:47:56', '2026-11-05 14:47:56', 0);
-INSERT INTO `qq_hot_song` VALUES (10, 10, 'Always Online', '林俊杰', 'JJ陆', 225, 101000000, 'up', NULL, '2026-11-05 14:47:56', '2026-11-05 14:47:56', 0);
-INSERT INTO `qq_hot_song` VALUES (11, 11, '开始懂了', '孙燕姿', '我要的幸福', 271, 98000000, 'flat', NULL, '2026-11-05 14:47:56', '2026-11-05 14:47:56', 0);
-INSERT INTO `qq_hot_song` VALUES (12, 12, '爱错', '王力宏', '改变自己', 238, 94000000, 'up', NULL, '2026-11-05 14:47:56', '2026-11-05 14:47:56', 0);
-INSERT INTO `qq_hot_song` VALUES (13, 13, '春娇与志明', '街道办GDC、欧阳耀莹', '春娇与志明', 204, 90000000, 'flat', NULL, '2026-11-05 14:47:56', '2026-11-05 14:47:56', 0);
-INSERT INTO `qq_hot_song` VALUES (14, 14, '自由的你', 'G.E.M.邓紫棋', '自由的你', 296, 88000000, 'new', NULL, '2026-11-05 14:47:56', '2026-11-05 14:47:56', 0);
-INSERT INTO `qq_hot_song` VALUES (15, 15, '恋人', '李荣浩', '恋人', 275, 84000000, 'up', NULL, '2026-11-05 14:47:56', '2026-11-05 14:47:56', 0);
-INSERT INTO `qq_hot_song` VALUES (16, 16, '甲乙丙丁', '李佳薇', '甲乙丙丁', 210, 80000000, 'new', NULL, '2026-11-05 14:47:56', '2026-11-05 14:47:56', 0);
-INSERT INTO `qq_hot_song` VALUES (17, 17, '我好像在哪见过你', '薛之谦', '怪咖', 279, 77000000, 'flat', NULL, '2026-11-05 14:47:56', '2026-11-05 14:47:56', 0);
-INSERT INTO `qq_hot_song` VALUES (18, 18, '特别的人', '方大同', '危险世界', 259, 73000000, 'up', NULL, '2026-11-05 14:47:56', '2026-11-05 14:47:56', 0);
-INSERT INTO `qq_hot_song` VALUES (19, 19, '泪海', '许茹芸', '如果云知道', 298, 69000000, 'flat', NULL, '2026-11-05 14:47:56', '2026-11-05 14:47:56', 0);
-INSERT INTO `qq_hot_song` VALUES (20, 20, '天亮了', '韩红', '天亮了', 274, 65000000, 'up', NULL, '2026-11-05 14:47:56', '2026-11-05 14:47:56', 0);
-INSERT INTO `qq_hot_song` VALUES (21, 21, '体面', '于文文', '体面', 265, 62000000, 'flat', NULL, '2026-11-05 14:47:56', '2026-11-05 14:47:56', 0);
-INSERT INTO `qq_hot_song` VALUES (22, 22, '凉凉', '杨宗纬、张碧晨', '三生三世十里桃花', 320, 59000000, 'up', NULL, '2026-11-05 14:47:56', '2026-11-05 14:47:56', 0);
-INSERT INTO `qq_hot_song` VALUES (23, 23, '夜空中最亮的星', '逃跑计划', '世界', 276, 56000000, 'flat', NULL, '2026-11-05 14:47:56', '2026-11-05 14:47:56', 0);
-INSERT INTO `qq_hot_song` VALUES (24, 24, '追光者', '岑宁儿', '追光者', 238, 53000000, 'up', NULL, '2026-11-05 14:47:56', '2026-11-05 14:47:56', 0);
-INSERT INTO `qq_hot_song` VALUES (25, 25, '平凡之路', '朴树', '猎户星座', 315, 50000000, 'flat', NULL, '2026-11-05 14:47:56', '2026-11-05 14:47:56', 0);
-INSERT INTO `qq_hot_song` VALUES (26, 26, '那些年', '胡夏', '那些年', 316, 47000000, 'up', NULL, '2026-11-05 14:47:56', '2026-11-05 14:47:56', 0);
-INSERT INTO `qq_hot_song` VALUES (27, 27, '一次就好', '杨宗纬', '一次就好', 267, 44000000, 'flat', NULL, '2026-11-05 14:47:56', '2026-11-05 14:47:56', 0);
-INSERT INTO `qq_hot_song` VALUES (28, 28, '斑马斑马', '宋冬野', '安和桥北', 257, 41000000, 'new', NULL, '2026-11-05 14:47:56', '2026-11-05 14:47:56', 0);
-INSERT INTO `qq_hot_song` VALUES (29, 29, '南方姑娘', '赵雷', '赵小雷', 304, 38000000, 'flat', NULL, '2026-11-05 14:47:56', '2026-11-05 14:47:56', 0);
-INSERT INTO `qq_hot_song` VALUES (30, 30, '理想', '赵雷', '无法长大', 324, 35000000, 'up', NULL, '2026-11-05 14:47:56', '2026-11-05 14:47:56', 0);
+INSERT INTO `qq_hot_song` VALUES (1, 1, '发如雪', '周杰伦', '十一月的萧邦', 299, 168000000, 'up', NULL, '2026-11-05 14:47:56', '2026-11-06 14:50:04', 0);
+INSERT INTO `qq_hot_song` VALUES (2, 2, '我不难过', '孙燕姿', '未完成', 320, 152000000, 'up', NULL, '2026-11-05 14:47:56', '2026-11-06 14:50:04', 0);
+INSERT INTO `qq_hot_song` VALUES (3, 3, '演员', '薛之谦', '意外', 261, 145000000, 'flat', NULL, '2026-11-05 14:47:56', '2026-11-06 14:50:04', 0);
+INSERT INTO `qq_hot_song` VALUES (4, 4, '我怀念的', '孙燕姿', '逆光', 289, 138000000, 'up', NULL, '2026-11-05 14:47:56', '2026-11-06 14:50:04', 0);
+INSERT INTO `qq_hot_song` VALUES (5, 5, '天龙八部之宿敌', '许嵩', '苏格拉没有底', 264, 131000000, 'flat', NULL, '2026-11-05 14:47:56', '2026-11-06 14:50:04', 0);
+INSERT INTO `qq_hot_song` VALUES (6, 6, '季候风', '王菲', '讨好自己', 276, 124000000, 'up', NULL, '2026-11-05 14:47:56', '2026-11-06 14:50:04', 0);
+INSERT INTO `qq_hot_song` VALUES (7, 7, '雨爱', '杨丞琳', '半熟宣言', 260, 118000000, 'flat', NULL, '2026-11-05 14:47:56', '2026-11-06 14:50:04', 0);
+INSERT INTO `qq_hot_song` VALUES (8, 8, '情歌', '梁静茹', '静茹&情歌', 260, 112000000, 'up', NULL, '2026-11-05 14:47:56', '2026-11-06 14:50:04', 0);
+INSERT INTO `qq_hot_song` VALUES (9, 9, '幻听', '许嵩', '寻雾启示', 273, 106000000, 'flat', NULL, '2026-11-05 14:47:56', '2026-11-06 14:50:04', 0);
+INSERT INTO `qq_hot_song` VALUES (10, 10, 'Always Online', '林俊杰', 'JJ陆', 225, 101000000, 'up', NULL, '2026-11-05 14:47:56', '2026-11-06 14:50:04', 0);
+INSERT INTO `qq_hot_song` VALUES (11, 11, '开始懂了', '孙燕姿', '我要的幸福', 271, 98000000, 'flat', NULL, '2026-11-05 14:47:56', '2026-11-06 14:50:04', 0);
+INSERT INTO `qq_hot_song` VALUES (12, 12, '爱错', '王力宏', '改变自己', 238, 94000000, 'up', NULL, '2026-11-05 14:47:56', '2026-11-06 14:50:04', 0);
+INSERT INTO `qq_hot_song` VALUES (13, 13, '春娇与志明', '街道办GDC、欧阳耀莹', '春娇与志明', 204, 90000000, 'flat', NULL, '2026-11-05 14:47:56', '2026-11-06 14:50:04', 0);
+INSERT INTO `qq_hot_song` VALUES (14, 14, '自由的你', 'G.E.M.邓紫棋', '自由的你', 296, 88000000, 'new', NULL, '2026-11-05 14:47:56', '2026-11-06 14:50:04', 0);
+INSERT INTO `qq_hot_song` VALUES (15, 15, '恋人', '李荣浩', '恋人', 275, 84000000, 'up', NULL, '2026-11-05 14:47:56', '2026-11-06 14:50:04', 0);
+INSERT INTO `qq_hot_song` VALUES (16, 16, '甲乙丙丁', '李佳薇', '甲乙丙丁', 210, 80000000, 'new', NULL, '2026-11-05 14:47:56', '2026-11-06 14:50:04', 0);
+INSERT INTO `qq_hot_song` VALUES (17, 17, '我好像在哪见过你', '薛之谦', '怪咖', 279, 77000000, 'flat', NULL, '2026-11-05 14:47:56', '2026-11-06 14:50:04', 0);
+INSERT INTO `qq_hot_song` VALUES (18, 18, '特别的人', '方大同', '危险世界', 259, 73000000, 'up', NULL, '2026-11-05 14:47:56', '2026-11-06 14:50:04', 0);
+INSERT INTO `qq_hot_song` VALUES (19, 19, '泪海', '许茹芸', '如果云知道', 298, 69000000, 'flat', NULL, '2026-11-05 14:47:56', '2026-11-06 14:50:04', 0);
+INSERT INTO `qq_hot_song` VALUES (20, 20, '天亮了', '韩红', '天亮了', 274, 65000000, 'up', NULL, '2026-11-05 14:47:56', '2026-11-06 14:50:04', 0);
+INSERT INTO `qq_hot_song` VALUES (21, 21, '体面', '于文文', '体面', 265, 62000000, 'flat', NULL, '2026-11-05 14:47:56', '2026-11-06 14:50:04', 0);
+INSERT INTO `qq_hot_song` VALUES (22, 22, '凉凉', '杨宗纬、张碧晨', '三生三世十里桃花', 320, 59000000, 'up', NULL, '2026-11-05 14:47:56', '2026-11-06 14:50:04', 0);
+INSERT INTO `qq_hot_song` VALUES (23, 23, '夜空中最亮的星', '逃跑计划', '世界', 276, 56000000, 'flat', NULL, '2026-11-05 14:47:56', '2026-11-06 14:50:04', 0);
+INSERT INTO `qq_hot_song` VALUES (24, 24, '追光者', '岑宁儿', '追光者', 238, 53000000, 'up', NULL, '2026-11-05 14:47:56', '2026-11-06 14:50:04', 0);
+INSERT INTO `qq_hot_song` VALUES (25, 25, '平凡之路', '朴树', '猎户星座', 315, 50000000, 'flat', NULL, '2026-11-05 14:47:56', '2026-11-06 14:50:04', 0);
+INSERT INTO `qq_hot_song` VALUES (26, 26, '那些年', '胡夏', '那些年', 316, 47000000, 'up', NULL, '2026-11-05 14:47:56', '2026-11-06 14:50:04', 0);
+INSERT INTO `qq_hot_song` VALUES (27, 27, '一次就好', '杨宗纬', '一次就好', 267, 44000000, 'flat', NULL, '2026-11-05 14:47:56', '2026-11-06 14:50:04', 0);
+INSERT INTO `qq_hot_song` VALUES (28, 28, '斑马斑马', '宋冬野', '安和桥北', 257, 41000000, 'new', NULL, '2026-11-05 14:47:56', '2026-11-06 14:50:04', 0);
+INSERT INTO `qq_hot_song` VALUES (29, 29, '南方姑娘', '赵雷', '赵小雷', 304, 38000000, 'flat', NULL, '2026-11-05 14:47:56', '2026-11-06 14:50:04', 0);
+INSERT INTO `qq_hot_song` VALUES (30, 30, '理想', '赵雷', '无法长大', 324, 35000000, 'up', NULL, '2026-11-05 14:47:56', '2026-11-06 14:50:04', 0);
 
 -- ----------------------------
 -- Table structure for singer
@@ -422,7 +504,7 @@ CREATE TABLE `singer`  (
   `deleted` tinyint NOT NULL DEFAULT 0 COMMENT '逻辑删除：0-未删 1-已删',
   PRIMARY KEY (`id`) USING BTREE,
   UNIQUE INDEX `uk_name`(`name` ASC) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 11 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '热门歌手' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 11 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '热门歌手' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of singer
@@ -455,7 +537,7 @@ CREATE TABLE `song`  (
   `deleted` tinyint NOT NULL DEFAULT 0 COMMENT '逻辑删除：0-未删 1-已删',
   PRIMARY KEY (`id`) USING BTREE,
   UNIQUE INDEX `uk_title_artist`(`title` ASC, `artist` ASC) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 31 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '曲库歌曲' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 31 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '曲库歌曲' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of song
@@ -505,11 +587,72 @@ CREATE TABLE `user`  (
   `deleted` tinyint NOT NULL DEFAULT 0 COMMENT '逻辑删除：0-未删 1-已删',
   PRIMARY KEY (`id`) USING BTREE,
   UNIQUE INDEX `uk_account`(`account` ASC) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 2 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '用户表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 4 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '用户表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of user
 -- ----------------------------
 INSERT INTO `user` VALUES (1, '123', '$2a$10$8l6XelQnMQTA9imAdbu6vuue4h7kyQNiUWBzx1nS/G/KXTLHqrgTe', '123', '2026-11-05 14:04:12', '2026-11-05 14:04:12', 0);
+
+-- ----------------------------
+-- Table structure for user_favorite
+-- ----------------------------
+DROP TABLE IF EXISTS `user_favorite`;
+CREATE TABLE `user_favorite`  (
+  `id` bigint NOT NULL AUTO_INCREMENT COMMENT '主键',
+  `user_id` bigint NOT NULL COMMENT '用户 id',
+  `song_id` bigint NOT NULL COMMENT '歌曲 id',
+  `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '收藏时间',
+  `deleted` tinyint NOT NULL DEFAULT 0 COMMENT '逻辑删除：0-未删 1-已删',
+  PRIMARY KEY (`id`) USING BTREE,
+  UNIQUE INDEX `uk_fav`(`user_id` ASC, `song_id` ASC) USING BTREE
+) ENGINE = InnoDB AUTO_INCREMENT = 3 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '用户收藏歌曲表' ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Records of user_favorite
+-- ----------------------------
+INSERT INTO `user_favorite` VALUES (1, 1, 1, '2026-11-06 14:32:04', 0);
+INSERT INTO `user_favorite` VALUES (2, 1, 2, '2026-11-06 14:32:04', 0);
+
+-- ----------------------------
+-- Table structure for user_follow
+-- ----------------------------
+DROP TABLE IF EXISTS `user_follow`;
+CREATE TABLE `user_follow`  (
+  `id` bigint NOT NULL AUTO_INCREMENT COMMENT '主键',
+  `follower_id` bigint NOT NULL COMMENT '关注者用户 id（粉丝）',
+  `followee_id` bigint NOT NULL COMMENT '被关注用户 id',
+  `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '关注时间',
+  `deleted` tinyint NOT NULL DEFAULT 0 COMMENT '逻辑删除：0-未删 1-已删',
+  PRIMARY KEY (`id`) USING BTREE,
+  UNIQUE INDEX `uk_follow`(`follower_id` ASC, `followee_id` ASC) USING BTREE
+) ENGINE = InnoDB AUTO_INCREMENT = 3 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '用户关注关系表' ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Records of user_follow
+-- ----------------------------
+
+-- ----------------------------
+-- Table structure for user_moment
+-- ----------------------------
+DROP TABLE IF EXISTS `user_moment`;
+CREATE TABLE `user_moment`  (
+  `id` bigint NOT NULL AUTO_INCREMENT COMMENT '主键',
+  `user_id` bigint NOT NULL COMMENT '用户 id',
+  `type` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT 'listen' COMMENT '动态类型',
+  `content` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '动态文本',
+  `song_id` bigint NULL DEFAULT NULL COMMENT '关联歌曲 id（可选）',
+  `playlist_id` bigint NULL DEFAULT NULL COMMENT '关联歌单 id（可选）',
+  `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '发布时间',
+  `deleted` tinyint NOT NULL DEFAULT 0 COMMENT '逻辑删除：0-未删 1-已删',
+  PRIMARY KEY (`id`) USING BTREE,
+  INDEX `idx_user_time`(`user_id` ASC, `create_time` ASC) USING BTREE
+) ENGINE = InnoDB AUTO_INCREMENT = 8 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '用户动态表' ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Records of user_moment
+-- ----------------------------
+INSERT INTO `user_moment` VALUES (1, 1, 'favorite', '收藏了歌曲「潮汐信号」', 1, NULL, '2026-11-06 14:32:04', 0);
+INSERT INTO `user_moment` VALUES (2, 1, 'favorite', '收藏了歌曲「凌晨三点的灯塔」', 2, NULL, '2026-11-06 14:32:04', 0);
 
 SET FOREIGN_KEY_CHECKS = 1;

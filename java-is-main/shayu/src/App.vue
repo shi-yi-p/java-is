@@ -2,12 +2,18 @@
 import { ref, onMounted, onUnmounted } from 'vue'
 import LoginView from './views/LoginView.vue'
 import HomeView from './views/HomeView.vue'
+import ProfileView from './views/ProfileView.vue'
+import ForumView from './views/ForumView.vue'
+import RankingView from './views/RankingView.vue'
 import AdminLoginView from './views/AdminLoginView.vue'
 import AdminDashboardView from './views/AdminDashboardView.vue'
 
 /* ============ 极简 hash 路由 ============
  * #/login  登录页
  * #/home   首页
+ * #/profile    个人主页
+ * #/forum      论坛
+ * #/ranking    听歌总排名榜
  * #/rank        榜单页      ┐ 都由 HomeView 承载（共用顶栏/导航/播放器），
  * #/audiobook   听书页      │ HomeView 内部再按 hash 切换内容视图
  * #/live        直播页      ┘
@@ -23,6 +29,9 @@ const readAdminToken = () => {
 /* 由首页外壳承载的子页面 */
 const HOME_PAGES = ['home', 'rank', 'audiobook', 'live']
 
+/* 需要登录的独立页面 */
+const AUTH_PAGES = ['profile', 'forum', 'ranking']
+
 /* 归一化：rank/audiobook 也由 HomeView 渲染，避免落到模板兜底分支 */
 const toView = r => (HOME_PAGES.includes(r) ? 'home' : r)
 
@@ -30,6 +39,7 @@ function resolveRoute() {
   const h = location.hash.replace(/^#\/?/, '').split('?')[0]
   if (h === 'admin' || h === 'admin-login') return h        /* 后台管理 */
   if (h === 'login') return h
+  if (AUTH_PAGES.includes(h)) return h                       /* 个人主页/论坛/聊天/排名 */
   if (HOME_PAGES.includes(h)) return h
   return readToken() ? 'home' : 'login'   /* 默认：有 token 进首页，否则进登录页 */
 }
@@ -39,7 +49,8 @@ const route = ref(toView(resolveRoute()))
 function applyRoute() {
   let r = resolveRoute()
   if (r === 'admin' && !readAdminToken()) r = 'admin-login'   /* 未登录访问后台 → 回后台登录页 */
-  if (HOME_PAGES.includes(r) && !readToken()) r = 'login'     /* 未登录访问首页/榜单/听书 → 回登录页 */
+  if (AUTH_PAGES.includes(r) && !readToken()) r = 'login'      /* 未登录访问受保护页 → 回登录页 */
+  if (HOME_PAGES.includes(r) && !readToken()) r = 'login'      /* 未登录访问首页/榜单/听书 → 回登录页 */
   route.value = toView(r)                                     /* 统一交给 HomeView 渲染 */
   const target = '#/' + r
   if (location.hash !== target) location.hash = target
@@ -82,6 +93,9 @@ const pearls = ref([])
 
   <LoginView v-if="route === 'login'" />
   <HomeView v-else-if="route === 'home'" />
+  <ProfileView v-else-if="route === 'profile'" />
+  <ForumView v-else-if="route === 'forum'" />
+  <RankingView v-else-if="route === 'ranking'" />
   <AdminLoginView v-else-if="route === 'admin-login'" />
   <AdminDashboardView v-else />
 </template>

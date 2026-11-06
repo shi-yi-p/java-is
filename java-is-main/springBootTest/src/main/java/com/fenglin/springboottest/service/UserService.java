@@ -16,9 +16,9 @@ public interface UserService extends IService<User> {
     /**
      * 注册新用户（密码以 BCrypt 哈希存储）
      *
-     * @return 注册成功返回 true；账户已存在返回 false
+     * @return 注册成功返回新用户实体；账户已存在返回 null
      */
-    boolean register(String account, String password, String nickname);
+    User register(String account, String password, String nickname);
 
     /**
      * 登录校验

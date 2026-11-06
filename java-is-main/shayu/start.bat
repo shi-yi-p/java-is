@@ -49,7 +49,8 @@ REM 启动后端（独立窗口，端口显式指定 8081）
 REM ============================================
 if not defined BACK_UP (
     echo [1/2] 启动后端 Spring Boot :8081 ...
-    start "鲨鱼音乐-后端" cmd /k "chcp 65001 >nul && cd /d !BACKEND! && mvnw.cmd spring-boot:run -Dspring-boot.run.arguments=--server.port=8081"
+    REM 用 run-backend.sh 启动（绕开 mvnw 在 Git Bash 下的路径解析问题）
+    start "鲨鱼音乐-后端" cmd /k "chcp 65001 >nul && cd /d !BACKEND! && bash run-backend.sh"
 ) else (
     echo [1/2] 后端已在 8081 运行，跳过
 )
@@ -84,7 +85,7 @@ echo.
 echo ============================================
 echo   已启动。关闭两个服务窗口即可停止前后端
 echo   后端接口：http://localhost:8081/api
-echo   测试账号：testuser01 / abc12345
+echo   测试账号：123 / 12345678
 echo ============================================
 echo 本窗口可安全关闭。
 ping -n 3 127.0.0.1 >nul

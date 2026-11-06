@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableLogic;
 import com.baomidou.mybatisplus.annotation.TableName;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Data;
 
 import java.time.LocalDateTime;
@@ -22,7 +23,8 @@ public class User {
     /** 账户：手机号 / 邮箱 / 用户名 */
     private String account;
 
-    /** 密码：BCrypt 哈希密文 */
+    /** 密码：BCrypt 哈希密文（序列化时不暴露给前端） */
+    @JsonIgnore
     private String password;
 
     /** 昵称 */
