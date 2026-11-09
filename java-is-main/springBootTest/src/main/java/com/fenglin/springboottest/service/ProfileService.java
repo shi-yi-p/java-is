@@ -5,6 +5,7 @@ import com.fenglin.springboottest.dto.ProfileVO;
 import com.fenglin.springboottest.dto.RankUserVO;
 import com.fenglin.springboottest.entity.Song;
 import com.fenglin.springboottest.entity.User;
+import com.fenglin.springboottest.entity.UserPlaylist;
 
 import java.util.List;
 
@@ -78,4 +79,30 @@ public interface ProfileService {
      * 听歌总排名榜：统计所有用户累计听歌时长，按时长降序。
      */
     List<RankUserVO> listenRanking();
+
+    /**
+     * 个人歌单列表（仅当前用户自建歌单，按 user_id 隔离）
+     */
+    List<UserPlaylist> myPlaylists(Long userId);
+
+    /**
+     * 新建个人歌单
+     *
+     * @return 新建的歌单；歌单名重复返回 null
+     */
+    UserPlaylist createPlaylist(Long userId, String name, String coverTone);
+
+    /**
+     * 重命名个人歌单
+     *
+     * @return 更新后的歌单；不存在/不属于该用户返回 null
+     */
+    UserPlaylist renamePlaylist(Long userId, Long playlistId, String name);
+
+    /**
+     * 删除个人歌单（逻辑删除，仅能删自己的）
+     *
+     * @return true 删除成功；false 不存在或不属于该用户
+     */
+    boolean deletePlaylist(Long userId, Long playlistId);
 }

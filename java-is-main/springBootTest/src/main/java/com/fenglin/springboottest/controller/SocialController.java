@@ -3,9 +3,7 @@ package com.fenglin.springboottest.controller;
 import com.fenglin.springboottest.common.Result;
 import com.fenglin.springboottest.dto.ForumCommentVO;
 import com.fenglin.springboottest.dto.ForumPostVO;
-import com.fenglin.springboottest.entity.User;
 import com.fenglin.springboottest.service.SocialService;
-import com.fenglin.springboottest.service.UserService;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -29,17 +27,10 @@ public class SocialController {
     @Autowired
     private SocialService socialService;
 
-    @Autowired
-    private UserService userService;
-
-    /** 从拦截器注入的 account 反查用户 id */
+    /** 直接从拦截器注入的 userId 读取，避免重复查库（account → id） */
     private Long resolveUserId(HttpServletRequest request) {
-        String account = (String) request.getAttribute("account");
-        if (account == null) {
-            return null;
-        }
-        User user = userService.lambdaQuery().eq(User::getAccount, account).one();
-        return user != null ? user.getId() : null;
+        Object uid = request.getAttribute("userId");
+        return uid instanceof Long ? (Long) uid : null;
     }
 
     // ================= 论坛帖子 =================

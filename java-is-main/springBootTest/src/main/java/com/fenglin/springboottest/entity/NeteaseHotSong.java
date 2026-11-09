@@ -1,6 +1,7 @@
 package com.fenglin.springboottest.entity;
 
 import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableLogic;
 import com.baomidou.mybatisplus.annotation.TableName;
@@ -55,4 +56,8 @@ public class NeteaseHotSong {
     /** 逻辑删除：0-未删 1-已删 */
     @TableLogic
     private Integer deleted;
+
+    /** 关联主曲库 song 表的统一 id（非数据库列，Service 层按 title+artist 反查填充），收藏/播放用此 id */
+    @TableField(exist = false)
+    private Long songId;
 }

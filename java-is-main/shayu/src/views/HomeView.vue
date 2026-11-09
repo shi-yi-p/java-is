@@ -1,6 +1,6 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
-import { player, playTrack } from '../player.js'
+import { player, playTrack, isFavorite, toggleFavorite, refreshFavorites, songIdOf } from '../player.js'
 import PlayerBar from '../components/PlayerBar.vue'
 import NowPlaying from '../components/NowPlaying.vue'
 
@@ -314,15 +314,20 @@ function playSong(s, queue) {
   playTrack(s, queue)
 }
 
-/* 榜单页：播放整个榜单 */
-function playAll(c) {
-  if (!c || !c.songs || !c.songs.length) return toast('该榜单暂无歌曲 🎧')
-  playSong(c.songs[0], c.songs)
+/* ================= 收藏 / 取消收藏（走后端，全局联动） ================= */
+async function favSong(s, e) {
+  if (e) e.stopPropagation()
+  if (!songIdOf(s)) return
+  const msg = await toggleFavorite(s)
+  toast(msg)
 }
 
-/* 榜单页统计：榜单内歌曲总数 */
-const chartSongCount = computed(() =>
-  charts.value.reduce((n, c) => n + ((c.songs && c.songs.length) || 0), 0)
+/* 进入首页时刷新收藏集合，保证心形状态正确 */
+onMounted(refreshFavorites)
+
+/* 榜单页统计：4 个热歌榜歌曲总数 */
+const hotSongCount = computed(() =>
+  douyinHot.value.length + kugouHot.value.length + qqHot.value.length + neteaseHot.value.length
 )
 
 /* 直播页统计：所有直播间总在看人数 */
@@ -335,9 +340,39 @@ function openLiveRoom(c) {
   openInfo('🔴 ' + c.name, fmtPlays(c.listeners) + ' 人正在观看\n\n直播间已为你打开（演示）\n主播：' + c.name + ' · 房间号 ' + c.id)
 }
 
-/* 歌单点击：打开详情弹窗 */
-function openPlaylist(p) {
-  openInfo('歌单 · ' + p.title, (p.subtitle || '') + (p.tag ? '\n标签：' + p.tag : '') + '\n播放量：' + fmtPlays(p.plays) + '\n\n（歌单内容为演示）')
+/* ================= 首页「精选歌单」：展示 4 个热歌榜（抖音/酷狗/QQ/网易云） ================= */
+/* 4 个热歌榜的卡片元数据：key 对应响应式数组，icon/name/tone 用于歌单卡片封面 */
+const hotCharts = [
+  { key: 'douyin', icon: '🔥', name: '抖音热搜榜', sub: '全网刷屏神曲', tone: 'p2', anchor: 'hot-douyin' },
+  { key: 'kugou', icon: '🎵', name: '酷狗热歌榜', sub: '经典流行传唱金曲', tone: 'p3', anchor: 'hot-kugou' },
+  { key: 'qq', icon: '🎼', name: 'QQ音乐热歌榜', sub: '巅峰流行传唱经典', tone: 'p8', anchor: 'hot-qq' },
+  { key: 'netease', icon: '☁️', name: '网易云热歌榜', sub: '独立民谣走心热歌', tone: 'p7', anchor: 'hot-netease' }
+]
+
+/* 热歌榜响应式数组映射 */
+function hotSongsOf(key) {
+  if (key === 'douyin') return douyinHot.value
+  if (key === 'kugou') return kugouHot.value
+  if (key === 'qq') return qqHot.value
+  if (key === 'netease') return neteaseHot.value
+  return []
+}
+
+/* 点击热歌榜卡片：跳转到榜单页并定位到对应热歌榜区块 */
+function goChart(hc) {
+  goPage('rank')
+  toast('正在定位「' + hc.name + '」榜单 🎧')
+  setTimeout(() => {
+    const el = document.getElementById(hc.anchor)
+    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }, 120)
+}
+
+/* 热歌榜卡片副标题：歌曲数与榜首歌曲 */
+function chartSubtitle(hc) {
+  const songs = hotSongsOf(hc.key)
+  const top = songs.length ? songs[0].title : ''
+  return songs.length + ' 首 · ' + (top ? '榜首《' + top + '》' : '待更新')
 }
 
 /* ================= 信息弹窗（音乐人 / 声播 / VIP / 商务合作 / 更多）================= */
@@ -548,32 +583,31 @@ function goProfile() {
       <button type="button" @click="coming('下载 Android 版')">🤖 下载 Android 版</button>
     </div>
 
-    <!-- ================= 精选歌单（榜单/听书已独立成页） ================= -->
+    <!-- ================= 精选歌单（展示 4 个热歌榜，点击跳转定位对应榜单） ================= -->
     <section class="kg-section">
       <h3 class="kg-sec-title">
         精选歌单
-        <a href="#" @click.prevent="coming('歌单广场')">更多 ›</a>
+        <a href="#" @click.prevent="goPage('rank')">更多 ›</a>
       </h3>
-      <div v-if="playlists.length" class="kg-cards wide">
+      <div class="kg-cards wide">
         <div
-          v-for="p in playlists"
-          :key="p.id"
+          v-for="hc in hotCharts"
+          :key="hc.key"
           class="kg-card"
-          @click="openPlaylist(p)"
+          @click="goChart(hc)"
         >
-          <div class="kg-card-cover" :class="p.tone">
-            <span class="kg-card-icon">{{ p.icon }}</span>
-            <span class="kg-card-plays">▶ {{ fmtPlays(p.plays) }}</span>
-            <span class="kg-card-hover">▶ 全部播放</span>
+          <div class="kg-card-cover" :class="hc.tone">
+            <span class="kg-card-icon">{{ hc.icon }}</span>
+            <span class="kg-card-plays">▶ {{ hotSongsOf(hc.key).length }} 首</span>
+            <span class="kg-card-hover">查看榜单 ›</span>
           </div>
           <div class="kg-card-info">
-            <b class="kg-card-title">{{ p.title }}</b>
-            <span class="kg-card-sub">{{ p.subtitle }}</span>
-            <em v-if="p.tag" class="kg-card-tag">{{ p.tag }}</em>
+            <b class="kg-card-title">{{ hc.name }}</b>
+            <span class="kg-card-sub">{{ chartSubtitle(hc) }}</span>
+            <em class="kg-card-tag">{{ hc.sub }}</em>
           </div>
         </div>
       </div>
-      <div v-else class="kg-empty">暂无歌单 · 待接入后端接口 🦈</div>
     </section>
 
     <!-- ================= 热门歌手 ================= -->
@@ -609,17 +643,17 @@ function goProfile() {
         <div class="kg-page-hero-text">
           <em>CHARTS</em>
           <h2>排行榜</h2>
-          <p>飙升榜 · 新歌榜 · TOP500 · 原创榜，数据实时同步本地曲库</p>
+          <p>抖音热搜 · 酷狗 · QQ · 网易云，全网热歌实时同步</p>
         </div>
         <div class="kg-page-stats">
-          <div><b>{{ charts.length }}</b><span>个榜单</span></div>
-          <div><b>{{ chartSongCount }}</b><span>首歌曲</span></div>
+          <div><b>4</b><span>个榜单</span></div>
+          <div><b>{{ hotSongCount }}</b><span>首歌曲</span></div>
           <div><b>实时</b><span>每日更新</span></div>
         </div>
       </header>
 
       <!-- 抖音热歌榜 -->
-      <div v-if="douyinHot.length" class="kg-douyin">
+      <div v-if="douyinHot.length" id="hot-douyin" class="kg-douyin">
         <div class="kg-douyin-head">
           <div class="kg-douyin-title">
             <i class="kg-douyin-badge">🔥 抖音热歌榜</i>
@@ -643,12 +677,13 @@ function goProfile() {
             </span>
             <span class="kg-douyin-hot">🔥 {{ fmtPlays(s.hotValue) }}</span>
             <span class="kg-trend" :class="s.trend">{{ trendOf(s.trend) }}</span>
+            <button class="kg-fav" :class="{ on: isFavorite(s) }" type="button" @click="favSong(s, $event)" :title="isFavorite(s) ? '取消收藏' : '收藏'">{{ isFavorite(s) ? '❤' : '♡' }}</button>
           </li>
         </ol>
       </div>
 
       <!-- 酷狗热歌榜 -->
-      <div v-if="kugouHot.length" class="kg-douyin kg-kugou">
+      <div v-if="kugouHot.length" id="hot-kugou" class="kg-douyin kg-kugou">
         <div class="kg-douyin-head">
           <div class="kg-douyin-title">
             <i class="kg-douyin-badge kg-kugou-badge">🎵 酷狗热歌榜</i>
@@ -672,12 +707,13 @@ function goProfile() {
             </span>
             <span class="kg-douyin-hot kg-kugou-hot">🔥 {{ fmtPlays(s.hotValue) }}</span>
             <span class="kg-trend" :class="s.trend">{{ trendOf(s.trend) }}</span>
+            <button class="kg-fav" :class="{ on: isFavorite(s) }" type="button" @click="favSong(s, $event)" :title="isFavorite(s) ? '取消收藏' : '收藏'">{{ isFavorite(s) ? '❤' : '♡' }}</button>
           </li>
         </ol>
       </div>
 
       <!-- QQ音乐热歌榜 -->
-      <div v-if="qqHot.length" class="kg-douyin kg-qq">
+      <div v-if="qqHot.length" id="hot-qq" class="kg-douyin kg-qq">
         <div class="kg-douyin-head">
           <div class="kg-douyin-title">
             <i class="kg-douyin-badge kg-qq-badge">🎼 QQ音乐热歌榜</i>
@@ -701,12 +737,13 @@ function goProfile() {
             </span>
             <span class="kg-douyin-hot kg-qq-hot">🔥 {{ fmtPlays(s.hotValue) }}</span>
             <span class="kg-trend" :class="s.trend">{{ trendOf(s.trend) }}</span>
+            <button class="kg-fav" :class="{ on: isFavorite(s) }" type="button" @click="favSong(s, $event)" :title="isFavorite(s) ? '取消收藏' : '收藏'">{{ isFavorite(s) ? '❤' : '♡' }}</button>
           </li>
         </ol>
       </div>
 
       <!-- 网易云热歌榜 -->
-      <div v-if="neteaseHot.length" class="kg-douyin kg-netease">
+      <div v-if="neteaseHot.length" id="hot-netease" class="kg-douyin kg-netease">
         <div class="kg-douyin-head">
           <div class="kg-douyin-title">
             <i class="kg-douyin-badge kg-netease-badge">☁️ 网易云热歌榜</i>
@@ -730,42 +767,12 @@ function goProfile() {
             </span>
             <span class="kg-douyin-hot kg-netease-hot">🔥 {{ fmtPlays(s.hotValue) }}</span>
             <span class="kg-trend" :class="s.trend">{{ trendOf(s.trend) }}</span>
+            <button class="kg-fav" :class="{ on: isFavorite(s) }" type="button" @click="favSong(s, $event)" :title="isFavorite(s) ? '取消收藏' : '收藏'">{{ isFavorite(s) ? '❤' : '♡' }}</button>
           </li>
         </ol>
       </div>
 
-      <div v-if="charts.length" class="kg-rank-grid">
-        <article v-for="c in charts" :key="c.id" class="kg-rank-card">
-          <div class="kg-chart-head" :class="c.tone">
-            {{ c.name }}
-            <i class="kg-chart-flag">热门</i>
-          </div>
-
-          <ol v-if="c.songs && c.songs.length" class="kg-chart-list">
-            <li
-              v-for="s in c.songs"
-              :key="s.id"
-              @click="playSong(s, c.songs)"
-            >
-              <span class="kg-rank" :class="{ top: s.rankNo <= 3 }">{{ s.rankNo }}</span>
-              <span class="kg-song">
-                <b class="kg-song-title">{{ s.title }}</b>
-                <span class="kg-song-artist"> - {{ s.artist }}</span>
-              </span>
-              <span class="kg-trend" :class="s.trend">{{ trendOf(s.trend) }}</span>
-            </li>
-          </ol>
-          <div v-else class="kg-empty slim">暂无歌曲数据</div>
-
-          <button
-            v-if="c.songs && c.songs.length"
-            class="kg-rank-play"
-            type="button"
-            @click="playAll(c)"
-          >▶ 播放全部（{{ c.songs.length }}）</button>
-        </article>
-      </div>
-      <div v-else class="kg-empty">暂无榜单 · 待接入后端接口 🦈</div>
+      <div v-if="!douyinHot.length && !kugouHot.length && !qqHot.length && !neteaseHot.length" class="kg-empty">暂无榜单 · 待接入后端接口 🦈</div>
     </section>
 
     <!-- ============================================================
@@ -1373,6 +1380,19 @@ function goProfile() {
     width: 20px; text-align: center;
     font-variant-numeric: tabular-nums;
   }
+  /* ===== 歌曲收藏按钮（首页热歌榜/榜单通用） ===== */
+  .kg-fav {
+    flex: none;
+    width: 30px; height: 30px;
+    font-size: 16px; line-height: 1;
+    color: #b3bcc9;
+    background: none;
+    border: 0; border-radius: 50%;
+    cursor: pointer;
+    transition: color .15s ease, background .15s ease, transform .15s ease;
+  }
+  .kg-fav:hover { background: #fef0f2; transform: scale(1.1); }
+  .kg-fav.on { color: #e03131; }
   .kg-trend.up   { color: #ef4444; }
   .kg-trend.down { color: #10b981; }
   .kg-trend.flat { color: #9aa5b5; }

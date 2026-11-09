@@ -89,11 +89,19 @@ const MODULES = [
     { k: 'tone', label: '配色', type: 'select', options: TONE_MAP },
     { k: 'listens', label: '收听量', type: 'number' },
     { k: 'sortOrder', label: '排序', type: 'number' }
+  ]},
+  { key: 'user', name: '用户', icon: '👤', fields: [
+    { k: 'account', label: '账户' },
+    { k: 'nickname', label: '昵称' },
+    { k: 'createTime', label: '注册时间', readonly: true }
   ]}
 ]
 
 const activeKey = ref('song')
 const activeModule = computed(() => MODULES.find(m => m.key === activeKey.value))
+
+/* ============ 用户模块专用：密码字段（不入通用 fields，避免覆盖） ============ */
+const userPassword = ref('')
 
 const rows = ref([])
 const loading = ref(false)
@@ -121,6 +129,7 @@ function switchModule(k) {
   activeKey.value = k
   showSongs.value = false
   songManageChartId.value = null
+  userPassword.value = ''
   loadList()
 }
 
@@ -131,27 +140,35 @@ const form = reactive({})
 
 function openCreate() {
   const f = {}
-  activeModule.value.fields.forEach(fld => { f[fld.k] = '' })
+  activeModule.value.fields.forEach(fld => { if (!fld.readonly) f[fld.k] = '' })
   editing.value = null
+  userPassword.value = ''
   Object.assign(form, f)
   showForm.value = true
 }
 function openEdit(row) {
   const f = {}
-  activeModule.value.fields.forEach(fld => { f[fld.k] = row[fld.k] ?? '' })
+  activeModule.value.fields.forEach(fld => { if (!fld.readonly) f[fld.k] = row[fld.k] ?? '' })
   f.id = row.id
   editing.value = row
+  userPassword.value = ''
   Object.assign(form, f)
   showForm.value = true
 }
 async function save() {
   const payload = {}
   activeModule.value.fields.forEach(fld => {
+    if (fld.readonly) return
     let v = form[fld.k]
     if (fld.type === 'number') v = (v === '' || v == null) ? null : Number(v)
     payload[fld.k] = v
   })
   if (editing.value) payload.id = editing.value.id
+  // 用户模块：新增必填密码，编辑时仅当填了新密码才提交
+  if (activeKey.value === 'user') {
+    if (!editing.value && !userPassword.value) { toast('请输入密码'); return }
+    if (userPassword.value) payload.password = userPassword.value
+  }
   try {
     const res = await fetch(API + '/api/admin/' + activeKey.value, {
       method: editing.value ? 'PUT' : 'POST',
@@ -239,6 +256,14 @@ function fmtNum(n) {
   return String(v)
 }
 
+function fmtDate(s) {
+  if (!s) return ''
+  const d = new Date(s)
+  if (isNaN(d.getTime())) return String(s)
+  const p = n => String(n).padStart(2, '0')
+  return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate()) + ' ' + p(d.getHours()) + ':' + p(d.getMinutes())
+}
+
 onMounted(loadList)
 </script>
 
@@ -286,6 +311,7 @@ onMounted(loadList)
               <tr v-for="row in rows" :key="row.id">
                 <td v-for="f in activeModule.fields" :key="f.k">
                   <span v-if="f.type === 'number'">{{ fmtNum(row[f.k]) }}</span>
+                  <span v-else-if="f.k === 'createTime'">{{ fmtDate(row[f.k]) }}</span>
                   <span v-else>{{ row[f.k] }}</span>
                 </td>
                 <td class="op">
@@ -308,12 +334,16 @@ onMounted(loadList)
       <div class="admin-modal">
         <h3>{{ editing ? '编辑' + activeModule.name : '新增' + activeModule.name }}</h3>
         <div class="admin-form">
-          <div class="admin-fld" v-for="f in activeModule.fields" :key="f.k">
+          <div class="admin-fld" v-for="f in activeModule.fields.filter(x => !x.readonly)" :key="f.k">
             <label>{{ f.label }}</label>
             <select v-if="f.type === 'select'" v-model="form[f.k]">
               <option v-for="o in f.options" :key="o.v" :value="o.v">{{ o.t }}</option>
             </select>
             <input v-else :type="f.type === 'number' ? 'number' : 'text'" v-model="form[f.k]" :placeholder="f.label" />
+          </div>
+          <div class="admin-fld" v-if="activeKey === 'user'">
+            <label>{{ editing ? '重置密码（留空则不修改）' : '密码' }}</label>
+            <input type="password" v-model="userPassword" :placeholder="editing ? '留空表示不修改密码' : '请输入密码'" />
           </div>
         </div>
         <div class="admin-modal-foot">

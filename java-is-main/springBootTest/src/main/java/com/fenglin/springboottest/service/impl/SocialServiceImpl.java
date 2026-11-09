@@ -16,6 +16,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
@@ -42,7 +43,9 @@ public class SocialServiceImpl implements SocialService {
             qw.eq(ForumPost::getCategory, category.trim());
         }
         List<ForumPost> posts = postMapper.selectList(qw);
-        return posts.stream().map(this::toPostVO).collect(Collectors.toList());
+        // 一次性批量查询所有涉及的用户，避免 N+1
+        Map<Long, User> users = loadUsers(posts.stream().map(ForumPost::getUserId).toList());
+        return posts.stream().map(p -> toPostVO(p, users)).collect(Collectors.toList());
     }
 
     @Override
@@ -54,7 +57,7 @@ public class SocialServiceImpl implements SocialService {
         // 浏览数 +1
         post.setViews((post.getViews() == null ? 0 : post.getViews()) + 1);
         postMapper.updateById(post);
-        return toPostVO(post);
+        return toPostVO(post, loadUsers(java.util.Collections.singletonList(post.getUserId())));
     }
 
     @Override
@@ -71,7 +74,7 @@ public class SocialServiceImpl implements SocialService {
         post.setComments(0L);
         post.setViews(0L);
         postMapper.insert(post);
-        return toPostVO(post);
+        return toPostVO(post, loadUsers(java.util.Collections.singletonList(post.getUserId())));
     }
 
     @Override
@@ -92,7 +95,9 @@ public class SocialServiceImpl implements SocialService {
         List<ForumComment> list = commentMapper.selectList(Wrappers.<ForumComment>lambdaQuery()
                 .eq(ForumComment::getPostId, postId)
                 .orderByAsc(ForumComment::getCreateTime));
-        return list.stream().map(this::toCommentVO).collect(Collectors.toList());
+        // 一次性批量查询所有涉及的用户，避免 N+1
+        Map<Long, User> users = loadUsers(list.stream().map(ForumComment::getUserId).toList());
+        return list.stream().map(c -> toCommentVO(c, users)).collect(Collectors.toList());
     }
 
     @Override
@@ -111,12 +116,25 @@ public class SocialServiceImpl implements SocialService {
             post.setComments((post.getComments() == null ? 0 : post.getComments()) + 1);
             postMapper.updateById(post);
         }
-        return toCommentVO(c);
+        return toCommentVO(c, loadUsers(java.util.Collections.singletonList(c.getUserId())));
     }
 
     // ================= 私有工具 =================
 
-    private ForumPostVO toPostVO(ForumPost p) {
+    /** 批量加载用户，返回 userId → User 映射（一次 IN 查询，消除 N+1） */
+    private Map<Long, User> loadUsers(List<Long> userIds) {
+        if (userIds == null || userIds.isEmpty()) {
+            return java.util.Collections.emptyMap();
+        }
+        List<Long> distinct = userIds.stream().filter(java.util.Objects::nonNull).distinct().toList();
+        if (distinct.isEmpty()) {
+            return java.util.Collections.emptyMap();
+        }
+        return userMapper.selectBatchIds(distinct).stream()
+                .collect(Collectors.toMap(User::getId, u -> u, (a, b) -> a));
+    }
+
+    private ForumPostVO toPostVO(ForumPost p, Map<Long, User> users) {
         ForumPostVO vo = new ForumPostVO();
         vo.setId(p.getId());
         vo.setUserId(p.getUserId());
@@ -126,7 +144,7 @@ public class SocialServiceImpl implements SocialService {
         vo.setLikes(p.getLikes() == null ? 0 : p.getLikes());
         vo.setComments(p.getComments() == null ? 0 : p.getComments());
         vo.setViews(p.getViews() == null ? 0 : p.getViews());
-        User u = userMapper.selectById(p.getUserId());
+        User u = users.get(p.getUserId());
         if (u != null) {
             String nick = u.getNickname() != null ? u.getNickname() : u.getAccount();
             vo.setNickname(nick);
@@ -139,14 +157,14 @@ public class SocialServiceImpl implements SocialService {
         return vo;
     }
 
-    private ForumCommentVO toCommentVO(ForumComment c) {
+    private ForumCommentVO toCommentVO(ForumComment c, Map<Long, User> users) {
         ForumCommentVO vo = new ForumCommentVO();
         vo.setId(c.getId());
         vo.setPostId(c.getPostId());
         vo.setUserId(c.getUserId());
         vo.setContent(c.getContent());
         vo.setLikes(c.getLikes() == null ? 0 : c.getLikes());
-        User u = userMapper.selectById(c.getUserId());
+        User u = users.get(c.getUserId());
         if (u != null) {
             String nick = u.getNickname() != null ? u.getNickname() : u.getAccount();
             vo.setNickname(nick);

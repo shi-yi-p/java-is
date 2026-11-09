@@ -12,6 +12,7 @@ import com.fenglin.springboottest.entity.ChartSong;
 import com.fenglin.springboottest.entity.Playlist;
 import com.fenglin.springboottest.entity.Singer;
 import com.fenglin.springboottest.entity.Song;
+import com.fenglin.springboottest.entity.User;
 import com.fenglin.springboottest.mapper.AudiobookMapper;
 import com.fenglin.springboottest.mapper.ChannelMapper;
 import com.fenglin.springboottest.mapper.ChartMapper;
@@ -19,7 +20,9 @@ import com.fenglin.springboottest.mapper.ChartSongMapper;
 import com.fenglin.springboottest.mapper.PlaylistMapper;
 import com.fenglin.springboottest.mapper.SingerMapper;
 import com.fenglin.springboottest.mapper.SongMapper;
+import com.fenglin.springboottest.mapper.UserMapper;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -54,8 +57,12 @@ public class AdminController {
     @Autowired private ChannelMapper channelMapper;
     @Autowired private AudiobookMapper audiobookMapper;
     @Autowired private ChartSongMapper chartSongMapper;
+    @Autowired private UserMapper userMapper;
 
     @Autowired private JwtUtil jwtUtil;
+
+    /** 用户密码 BCrypt 加密（与注册/登录一致） */
+    private final BCryptPasswordEncoder encoder = new BCryptPasswordEncoder();
 
     @Value("${shark.admin.account}")
     private String adminAccount;
@@ -118,6 +125,82 @@ public class AdminController {
             case "audiobook"  -> new Meta(audiobookMapper, Audiobook.class, "sort_order,id");
             default           -> null;
         };
+    }
+
+    /* ============ 用户管理（专用，密码需 BCrypt 加密） ============ */
+
+    /** 用户列表：返回账户/昵称/创建时间（password 由 @JsonIgnore 自动隐藏） */
+    @GetMapping("/user")
+    public ResponseEntity<Result<?>> userList(HttpServletRequest request) {
+        ResponseEntity<Result<?>> err = needAuth(request);
+        if (err != null) return err;
+        QueryWrapper<User> qw = new QueryWrapper<>();
+        qw.orderByAsc("id");
+        return ResponseEntity.ok(Result.ok("用户列表", userMapper.selectList(qw)));
+    }
+
+    /** 新增用户：密码 BCrypt 加密后落库，账户查重 */
+    @PostMapping("/user")
+    public ResponseEntity<Result<?>> userCreate(@RequestBody Map<String, Object> body,
+                                                 HttpServletRequest request) {
+        ResponseEntity<Result<?>> err = needAuth(request);
+        if (err != null) return err;
+        String account = str(body.get("account"));
+        String password = str(body.get("password"));
+        String nickname = str(body.get("nickname"));
+        if (account.isEmpty() || password.isEmpty()) {
+            return ResponseEntity.badRequest().body(Result.fail(400, "账户和密码不能为空"));
+        }
+        Long exists = userMapper.selectCount(new QueryWrapper<User>().eq("account", account));
+        if (exists != null && exists > 0) {
+            return ResponseEntity.badRequest().body(Result.fail(400, "账户已存在：" + account));
+        }
+        User u = new User();
+        u.setAccount(account);
+        u.setPassword(encoder.encode(password));
+        u.setNickname(nickname.isEmpty() ? account : nickname);
+        userMapper.insert(u);
+        return ResponseEntity.ok(Result.ok("用户创建成功", u));
+    }
+
+    /** 更新用户：可改账户/昵称；传了新密码则更新密码，否则保留原密码 */
+    @PutMapping("/user")
+    public ResponseEntity<Result<?>> userUpdate(@RequestBody Map<String, Object> body,
+                                                 HttpServletRequest request) {
+        ResponseEntity<Result<?>> err = needAuth(request);
+        if (err != null) return err;
+        Object idObj = body.get("id");
+        if (idObj == null) return ResponseEntity.badRequest().body(Result.fail(400, "缺少用户 id"));
+        Long id = Long.valueOf(String.valueOf(idObj));
+        User u = userMapper.selectById(id);
+        if (u == null) return ResponseEntity.badRequest().body(Result.fail(400, "用户不存在"));
+        String account = str(body.get("account"));
+        String nickname = str(body.get("nickname"));
+        String password = str(body.get("password"));
+        if (!account.isEmpty() && !account.equals(u.getAccount())) {
+            Long exists = userMapper.selectCount(new QueryWrapper<User>().eq("account", account));
+            if (exists != null && exists > 0) {
+                return ResponseEntity.badRequest().body(Result.fail(400, "账户已被占用：" + account));
+            }
+            u.setAccount(account);
+        }
+        if (!nickname.isEmpty()) u.setNickname(nickname);
+        if (!password.isEmpty()) u.setPassword(encoder.encode(password));
+        userMapper.updateById(u);
+        return ResponseEntity.ok(Result.ok("用户更新成功", u));
+    }
+
+    /** 删除用户（逻辑删除） */
+    @DeleteMapping("/user/{id}")
+    public ResponseEntity<Result<?>> userDelete(@PathVariable Long id, HttpServletRequest request) {
+        ResponseEntity<Result<?>> err = needAuth(request);
+        if (err != null) return err;
+        userMapper.deleteById(id);
+        return ResponseEntity.ok(Result.ok("删除成功", null));
+    }
+
+    private String str(Object o) {
+        return o == null ? "" : String.valueOf(o).trim();
     }
 
     /* ============ 列表 ============ */

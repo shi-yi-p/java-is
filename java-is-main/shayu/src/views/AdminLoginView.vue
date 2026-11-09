@@ -122,6 +122,7 @@ function backHome() {
           <a href="#/home" @click.prevent="backHome">← 返回官网首页</a>
         </p>
         <p class="admin-tip">本页面仅提供登录功能，注册请前往用户端 🐟</p>
+        <p class="admin-cred">默认管理员账号：<b>admin</b>　密码：<b>admin123</b></p>
       </form>
     </section>
   </main>
@@ -271,6 +272,13 @@ function backHome() {
   .admin-foot { margin-top: 20px; text-align: center; font-size: 13px; font-weight: 700; }
   .admin-foot a { color: var(--ink); text-decoration: none; border-bottom: 2px solid #f97316; }
   .admin-tip { margin-top: 10px; text-align: center; font-size: 11.5px; font-weight: 600; color: var(--ink-soft); }
+  .admin-cred {
+    margin-top: 14px; padding: 10px 14px;
+    text-align: center; font-size: 12px; font-weight: 600;
+    color: #7c4a12; background: #fff7e6;
+    border: 1px dashed #f0c36a; border-radius: 10px;
+  }
+  .admin-cred b { color: #b45309; font-weight: 800; }
 
   .admin-toast {
     position: fixed; left: 50%; bottom: 34px; transform: translate(-50%, 130%);

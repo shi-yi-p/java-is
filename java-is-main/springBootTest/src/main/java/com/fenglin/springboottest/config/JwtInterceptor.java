@@ -1,6 +1,8 @@
 package com.fenglin.springboottest.config;
 
 import com.fenglin.springboottest.common.JwtUtil;
+import com.fenglin.springboottest.entity.User;
+import com.fenglin.springboottest.service.UserService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -10,13 +12,17 @@ import org.springframework.web.servlet.HandlerInterceptor;
 
 /**
  * JWT 拦截器：对受保护接口（如 /api/me）校验 Authorization: Bearer <token>。
- * 校验通过后将账户名写入 request 属性，供控制器读取。
+ * 校验通过后将账户名与用户 id 一并写入 request 属性，供控制器直接读取，
+ * 避免各控制器重复执行「account → 查库 → id」的冗余查询。
  */
 @Component
 public class JwtInterceptor implements HandlerInterceptor {
 
     @Autowired
     private JwtUtil jwtUtil;
+
+    @Autowired
+    private UserService userService;
 
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
@@ -32,12 +38,18 @@ public class JwtInterceptor implements HandlerInterceptor {
         }
 
         String token = header.substring(7);
+        String account;
         if (!jwtUtil.validate(token)) {
             writeUnauthorized(response, "token 无效或已过期");
             return false;
         }
+        account = jwtUtil.parseAccount(token);
 
-        request.setAttribute("account", jwtUtil.parseAccount(token));
+        request.setAttribute("account", account);
+
+        // 一次性解析用户 id，避免每个控制器再重复查库（account → id）
+        User user = userService.lambdaQuery().eq(User::getAccount, account).one();
+        request.setAttribute("userId", user != null ? user.getId() : null);
         return true;
     }
 

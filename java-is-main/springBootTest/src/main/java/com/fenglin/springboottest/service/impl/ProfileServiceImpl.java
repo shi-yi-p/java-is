@@ -12,6 +12,7 @@ import com.fenglin.springboottest.entity.User;
 import com.fenglin.springboottest.entity.UserFavorite;
 import com.fenglin.springboottest.entity.UserFollow;
 import com.fenglin.springboottest.entity.UserMoment;
+import com.fenglin.springboottest.entity.UserPlaylist;
 import com.fenglin.springboottest.mapper.PlayHistoryMapper;
 import com.fenglin.springboottest.mapper.PlaylistMapper;
 import com.fenglin.springboottest.mapper.SongMapper;
@@ -19,6 +20,7 @@ import com.fenglin.springboottest.mapper.UserFavoriteMapper;
 import com.fenglin.springboottest.mapper.UserFollowMapper;
 import com.fenglin.springboottest.mapper.UserMapper;
 import com.fenglin.springboottest.mapper.UserMomentMapper;
+import com.fenglin.springboottest.mapper.UserPlaylistMapper;
 import com.fenglin.springboottest.service.ProfileService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -50,6 +52,8 @@ public class ProfileServiceImpl implements ProfileService {
     private PlayHistoryMapper historyMapper;
     @Autowired
     private UserMomentMapper momentMapper;
+    @Autowired
+    private UserPlaylistMapper userPlaylistMapper;
 
     private static final DateTimeFormatter FMT = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
 
@@ -72,7 +76,9 @@ public class ProfileServiceImpl implements ProfileService {
                 .eq(UserFavorite::getUserId, userId)));
         vo.setPlayCount(historyMapper.selectCount(Wrappers.<PlayHistory>lambdaQuery()
                 .eq(PlayHistory::getUserId, userId)));
-        vo.setPlaylistCount(playlistMapper.selectCount(null));
+        // 歌单数：统计当前用户自建的个人歌单，而非全站精选歌单
+        vo.setPlaylistCount(userPlaylistMapper.selectCount(Wrappers.<UserPlaylist>lambdaQuery()
+                .eq(UserPlaylist::getUserId, userId)));
 
         // 累计听歌时长（秒） + 鲨鱼等级
         long listenSeconds = sumListenSeconds(userId);
@@ -84,18 +90,9 @@ public class ProfileServiceImpl implements ProfileService {
         return vo;
     }
 
-    /** 汇总某用户累计听歌时长（秒） */
+    /** 汇总某用户累计听歌时长（秒）：数据库 SUM 聚合，避免全表拉取 */
     private long sumListenSeconds(Long userId) {
-        List<PlayHistory> list = historyMapper.selectList(Wrappers.<PlayHistory>lambdaQuery()
-                .eq(PlayHistory::getUserId, userId)
-                .select(PlayHistory::getDuration));
-        long sum = 0;
-        for (PlayHistory h : list) {
-            if (h.getDuration() != null) {
-                sum += h.getDuration();
-            }
-        }
-        return sum;
+        return historyMapper.sumListenSeconds(userId);
     }
 
     @Override
@@ -250,25 +247,24 @@ public class ProfileServiceImpl implements ProfileService {
 
     @Override
     public List<RankUserVO> listenRanking() {
-        // 统计所有用户累计听歌时长（按 user_id 分组求和）
-        List<PlayHistory> all = historyMapper.selectList(Wrappers.<PlayHistory>lambdaQuery()
-                .select(PlayHistory::getUserId, PlayHistory::getDuration));
-        java.util.Map<Long, long[]> agg = new java.util.LinkedHashMap<>(); // userId -> [秒数, 次数]
-        for (PlayHistory h : all) {
-            long sec = h.getDuration() != null ? h.getDuration() : 0;
-            long[] v = agg.computeIfAbsent(h.getUserId(), k -> new long[2]);
-            v[0] += sec;
-            v[1] += 1;
+        // 由数据库 GROUP BY 聚合（按时长降序），避免把全部历史行拉到内存
+        List<com.fenglin.springboottest.dto.ListenAgg> aggs = historyMapper.listenAggregates();
+        if (aggs.isEmpty()) {
+            return new ArrayList<>();
         }
 
-        // 按时长降序
-        List<java.util.Map.Entry<Long, long[]>> sorted = new ArrayList<>(agg.entrySet());
-        sorted.sort((a, b) -> Long.compare(b.getValue()[0], a.getValue()[0]));
+        // 一次性批量查询所有涉及的用户，消除 N+1
+        List<Long> userIds = aggs.stream().map(com.fenglin.springboottest.dto.ListenAgg::getUserId)
+                .filter(java.util.Objects::nonNull).distinct().toList();
+        java.util.Map<Long, User> userMap = userIds.isEmpty()
+                ? java.util.Collections.emptyMap()
+                : userMapper.selectBatchIds(userIds).stream()
+                        .collect(Collectors.toMap(User::getId, u -> u, (a, b) -> a));
 
         List<RankUserVO> result = new ArrayList<>();
         int rank = 1;
-        for (java.util.Map.Entry<Long, long[]> e : sorted) {
-            User u = userMapper.selectById(e.getKey());
+        for (com.fenglin.springboottest.dto.ListenAgg e : aggs) {
+            User u = userMap.get(e.getUserId());
             if (u == null) {
                 continue;
             }
@@ -278,9 +274,9 @@ public class ProfileServiceImpl implements ProfileService {
             vo.setNickname(u.getNickname() != null ? u.getNickname() : u.getAccount());
             String letter = vo.getNickname();
             vo.setAvatarLetter(letter == null || letter.isEmpty() ? "鲨" : letter.substring(0, 1));
-            long sec = e.getValue()[0];
+            long sec = e.getTotalSeconds() != null ? e.getTotalSeconds() : 0;
             vo.setListenSeconds(sec);
-            vo.setPlayCount(e.getValue()[1]);
+            vo.setPlayCount(e.getPlayCount() != null ? e.getPlayCount() : 0);
             int level = SharkLevel.levelOf(sec);
             vo.setLevel(level);
             vo.setLevelName(SharkLevel.nameOf(level));
@@ -294,6 +290,25 @@ public class ProfileServiceImpl implements ProfileService {
         List<UserMoment> list = momentMapper.selectList(Wrappers.<UserMoment>lambdaQuery()
                 .eq(UserMoment::getUserId, userId)
                 .orderByDesc(UserMoment::getCreateTime));
+        if (list.isEmpty()) {
+            return new ArrayList<>();
+        }
+
+        // 批量预取涉及的歌曲与歌单，消除 N+1
+        List<Long> songIds = list.stream().map(UserMoment::getSongId)
+                .filter(java.util.Objects::nonNull).distinct().toList();
+        java.util.Map<Long, Song> songMap = songIds.isEmpty()
+                ? java.util.Collections.emptyMap()
+                : songMapper.selectBatchIds(songIds).stream()
+                        .collect(Collectors.toMap(Song::getId, s -> s, (a, b) -> a));
+
+        List<Long> playlistIds = list.stream().map(UserMoment::getPlaylistId)
+                .filter(java.util.Objects::nonNull).distinct().toList();
+        java.util.Map<Long, Playlist> playlistMap = playlistIds.isEmpty()
+                ? java.util.Collections.emptyMap()
+                : playlistMapper.selectBatchIds(playlistIds).stream()
+                        .collect(Collectors.toMap(Playlist::getId, p -> p, (a, b) -> a));
+
         List<MomentVO> result = new ArrayList<>();
         for (UserMoment m : list) {
             MomentVO vo = new MomentVO();
@@ -301,11 +316,11 @@ public class ProfileServiceImpl implements ProfileService {
             vo.setType(m.getType());
             vo.setContent(m.getContent());
             if (m.getSongId() != null) {
-                Song s = songMapper.selectById(m.getSongId());
+                Song s = songMap.get(m.getSongId());
                 vo.setSongTitle(s != null ? s.getTitle() : null);
             }
             if (m.getPlaylistId() != null) {
-                Playlist p = playlistMapper.selectById(m.getPlaylistId());
+                Playlist p = playlistMap.get(m.getPlaylistId());
                 vo.setPlaylistTitle(p != null ? p.getTitle() : null);
             }
             vo.setCreateTime(m.getCreateTime() != null ? m.getCreateTime().format(FMT) : "");
@@ -322,5 +337,75 @@ public class ProfileServiceImpl implements ProfileService {
         m.setSongId(songId);
         m.setPlaylistId(playlistId);
         momentMapper.insert(m);
+    }
+
+    /* ============ 个人歌单（按 user_id 隔离，用户互不可见） ============ */
+
+    @Override
+    public List<UserPlaylist> myPlaylists(Long userId) {
+        return userPlaylistMapper.selectList(Wrappers.<UserPlaylist>lambdaQuery()
+                .eq(UserPlaylist::getUserId, userId)
+                .orderByAsc(UserPlaylist::getSortOrder)
+                .orderByAsc(UserPlaylist::getId));
+    }
+
+    @Override
+    public UserPlaylist createPlaylist(Long userId, String name, String coverTone) {
+        if (name == null || name.trim().isEmpty()) {
+            throw new IllegalArgumentException("歌单名不能为空");
+        }
+        String n = name.trim();
+        // 同用户名下歌单名查重
+        Long exists = userPlaylistMapper.selectCount(Wrappers.<UserPlaylist>lambdaQuery()
+                .eq(UserPlaylist::getUserId, userId)
+                .eq(UserPlaylist::getName, n));
+        if (exists != null && exists > 0) {
+            return null; // 重名
+        }
+        UserPlaylist p = new UserPlaylist();
+        p.setUserId(userId);
+        p.setName(n);
+        p.setCoverTone(coverTone != null && !coverTone.isBlank() ? coverTone : "p1");
+        p.setSortOrder(0);
+        userPlaylistMapper.insert(p);
+        return p;
+    }
+
+    @Override
+    public UserPlaylist renamePlaylist(Long userId, Long playlistId, String name) {
+        if (name == null || name.trim().isEmpty()) {
+            throw new IllegalArgumentException("歌单名不能为空");
+        }
+        UserPlaylist p = userPlaylistMapper.selectOne(Wrappers.<UserPlaylist>lambdaQuery()
+                .eq(UserPlaylist::getId, playlistId)
+                .eq(UserPlaylist::getUserId, userId));
+        if (p == null) {
+            return null; // 不存在或不属于该用户
+        }
+        String n = name.trim();
+        if (!n.equals(p.getName())) {
+            Long exists = userPlaylistMapper.selectCount(Wrappers.<UserPlaylist>lambdaQuery()
+                    .eq(UserPlaylist::getUserId, userId)
+                    .eq(UserPlaylist::getName, n)
+                    .ne(UserPlaylist::getId, playlistId));
+            if (exists != null && exists > 0) {
+                throw new IllegalArgumentException("已存在同名歌单：" + n);
+            }
+        }
+        p.setName(n);
+        userPlaylistMapper.updateById(p);
+        return p;
+    }
+
+    @Override
+    public boolean deletePlaylist(Long userId, Long playlistId) {
+        UserPlaylist p = userPlaylistMapper.selectOne(Wrappers.<UserPlaylist>lambdaQuery()
+                .eq(UserPlaylist::getId, playlistId)
+                .eq(UserPlaylist::getUserId, userId));
+        if (p == null) {
+            return false;
+        }
+        userPlaylistMapper.deleteById(playlistId);
+        return true;
     }
 }

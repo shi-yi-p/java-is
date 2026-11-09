@@ -1,6 +1,7 @@
 package com.fenglin.springboottest.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.fenglin.springboottest.common.SongIdResolver;
 import com.fenglin.springboottest.entity.NeteaseHotSong;
 import com.fenglin.springboottest.mapper.NeteaseHotSongMapper;
 import com.fenglin.springboottest.service.NeteaseHotSongService;
@@ -18,10 +19,15 @@ public class NeteaseHotSongServiceImpl implements NeteaseHotSongService {
     @Autowired
     private NeteaseHotSongMapper neteaseHotSongMapper;
 
+    @Autowired
+    private SongIdResolver songIdResolver;
+
     @Override
     public List<NeteaseHotSong> hotSongs() {
-        return neteaseHotSongMapper.selectList(
+        List<NeteaseHotSong> list = neteaseHotSongMapper.selectList(
                 new LambdaQueryWrapper<NeteaseHotSong>()
                         .orderByAsc(NeteaseHotSong::getRankNo));
+        songIdResolver.fillSongIds(list, NeteaseHotSong::getTitle, NeteaseHotSong::getArtist, NeteaseHotSong::setSongId);
+        return list;
     }
 }

@@ -64,9 +64,9 @@ async function loadProfile() {
     }
   } catch (e) { /* 静默 */ }
 
-  // 3) 我的歌单（沿用精选歌单，作为"创建的歌单"展示）
+  // 3) 我的歌单（个人自建歌单，按 user_id 隔离，读取个人接口）
   try {
-    const res = await fetch(API + '/api/home/playlists')
+    const res = await fetch(API + '/api/profile/playlists', { headers: h })
     const d = await res.json().catch(() => ({}))
     if (res.ok && Array.isArray(d.data)) playlists.value = d.data
   } catch (e) { /* 静默 */ }
@@ -184,6 +184,63 @@ function recordPlay(s) {
   fetch(API + '/api/profile/play?songId=' + s.id, { method: 'POST', headers: authHeaders() }).catch(() => {})
   // 播放后刷新排行（异步，不阻塞）
   setTimeout(loadHistory, 800)
+}
+
+/* ============ 个人歌单：新建 / 重命名 / 删除 ============ */
+const TONES = ['p1', 'p2', 'p3', 'p4', 'p5', 'p6', 'p7', 'p8']
+const showPlaylistModal = ref(false)
+const playlistName = ref('')
+const editingPlaylist = ref(null)   /* null=新建；否则为重命名对象 */
+
+function openCreatePlaylist() {
+  editingPlaylist.value = null
+  playlistName.value = ''
+  showPlaylistModal.value = true
+}
+function openRenamePlaylist(p, e) {
+  if (e) e.stopPropagation()
+  editingPlaylist.value = p
+  playlistName.value = p.name
+  showPlaylistModal.value = true
+}
+async function confirmPlaylist() {
+  const name = (playlistName.value || '').trim()
+  if (!name) return toast('请输入歌单名 🦈')
+  try {
+    let res
+    if (editingPlaylist.value) {
+      res = await fetch(API + '/api/profile/playlist/' + editingPlaylist.value.id + '/rename', {
+        method: 'POST', headers: { 'Content-Type': 'application/json', ...authHeaders() },
+        body: JSON.stringify({ name })
+      })
+    } else {
+      const tone = TONES[Math.floor(Math.random() * TONES.length)]
+      res = await fetch(API + '/api/profile/playlist', {
+        method: 'POST', headers: { 'Content-Type': 'application/json', ...authHeaders() },
+        body: JSON.stringify({ name, coverTone: tone })
+      })
+    }
+    const d = await res.json().catch(() => ({}))
+    if (res.ok) { toast(d.message || '已保存 🦈'); showPlaylistModal.value = false; loadPlaylists() }
+    else toast(d.message || '操作失败')
+  } catch (e) { toast('网络错误，请稍后重试 🔌') }
+}
+async function deletePlaylist(p, e) {
+  if (e) e.stopPropagation()
+  if (!confirm('确定删除歌单「' + p.name + '」？')) return
+  try {
+    const res = await fetch(API + '/api/profile/playlist/' + p.id, { method: 'DELETE', headers: authHeaders() })
+    const d = await res.json().catch(() => ({}))
+    if (res.ok) { toast('已删除 🗑️'); loadPlaylists() }
+    else toast(d.message || '删除失败')
+  } catch (e) { toast('网络错误 🔌') }
+}
+async function loadPlaylists() {
+  try {
+    const res = await fetch(API + '/api/profile/playlists', { headers: authHeaders() })
+    const d = await res.json().catch(() => ({}))
+    if (res.ok && Array.isArray(d.data)) playlists.value = d.data
+  } catch (e) { /* 静默 */ }
 }
 
 /* ============ 收藏 / 取消收藏 ============ */
@@ -319,20 +376,26 @@ function coming(t) { toast(t + ' 开发中 🚧') }
         <!-- 我的歌单 -->
         <template v-else-if="activeTab === '我的歌单'">
           <div class="pf-block">
-            <h3 class="pf-block-title">创建的歌单 <em>{{ playlists.length }}</em></h3>
+            <div class="pf-block-head">
+              <h3 class="pf-block-title">创建的歌单 <em>{{ playlists.length }}</em></h3>
+              <button class="pf-create-btn" type="button" @click="openCreatePlaylist">＋ 新建歌单</button>
+            </div>
             <div v-if="playlists.length" class="pf-cards">
               <div v-for="p in playlists" :key="p.id" class="pf-card" @click="coming('歌单详情')">
-                <div class="pf-card-cover" :class="p.tone">
-                  <span class="pf-card-icon">{{ p.icon }}</span>
-                  <span class="pf-card-plays">▶ {{ fmtPlays(p.plays) }}</span>
+                <div class="pf-card-cover" :class="p.coverTone || 'p1'">
+                  <span class="pf-card-icon">🎵</span>
+                  <span class="pf-card-plays">🦈 我的歌单</span>
                 </div>
                 <div class="pf-card-info">
-                  <b>{{ p.title }}</b>
-                  <span>{{ p.subtitle }}</span>
+                  <b>{{ p.name }}</b>
+                  <span class="pf-card-ops">
+                    <button type="button" @click.stop="openRenamePlaylist(p, $event)">重命名</button>
+                    <button type="button" class="del" @click.stop="deletePlaylist(p, $event)">删除</button>
+                  </span>
                 </div>
               </div>
             </div>
-            <div v-else class="pf-empty">还没有创建歌单，去发现好音乐吧 🦈</div>
+            <div v-else class="pf-empty">还没有创建歌单，点右上角「＋ 新建歌单」创建你的第一份歌单吧 🦈</div>
           </div>
         </template>
 
@@ -406,9 +469,9 @@ function coming(t) { toast(t + ' 开发中 🚧') }
         <div class="pf-block side">
           <h3 class="pf-block-title">创建的歌单</h3>
           <a v-for="p in playlists.slice(0, 5)" :key="p.id" href="#" class="pf-side-item" @click.prevent="coming('歌单详情')">
-            <span class="pf-side-cover" :class="p.tone">{{ p.icon }}</span>
-            <span class="pf-side-name">{{ p.title }}</span>
-            <span class="pf-side-count">{{ p.plays ? fmtPlays(p.plays) : '' }}</span>
+            <span class="pf-side-cover" :class="p.coverTone || 'p1'">🎵</span>
+            <span class="pf-side-name">{{ p.name }}</span>
+            <span class="pf-side-count"></span>
           </a>
           <div v-if="!playlists.length" class="pf-empty slim">暂无歌单</div>
         </div>
@@ -426,6 +489,25 @@ function coming(t) { toast(t + ' 开发中 🚧') }
     </div>
 
     <div class="toast" :class="{ show: toastMsg }">{{ toastMsg }}</div>
+
+    <!-- 新建 / 重命名 歌单 弹窗 -->
+    <div v-if="showPlaylistModal" class="pf-mask" @click.self="showPlaylistModal = false">
+      <div class="pf-modal">
+        <h3>{{ editingPlaylist ? '重命名歌单' : '新建歌单' }}</h3>
+        <input
+          class="pf-modal-input"
+          v-model="playlistName"
+          type="text"
+          maxlength="30"
+          :placeholder="editingPlaylist ? '输入新歌单名' : '给歌单起个名字吧'"
+          @keyup.enter="confirmPlaylist"
+        />
+        <div class="pf-modal-foot">
+          <button class="pf-modal-cancel" type="button" @click="showPlaylistModal = false">取消</button>
+          <button class="pf-modal-ok" type="button" @click="confirmPlaylist">{{ editingPlaylist ? '保存' : '创建' }}</button>
+        </div>
+      </div>
+    </div>
   </main>
 </template>
 
@@ -606,6 +688,17 @@ function coming(t) { toast(t + ' 开发中 🚧') }
     font-style: normal; font-size: 12px; font-weight: 700;
     color: #8a94a6;
   }
+  .pf-block-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px; }
+  .pf-block-head .pf-block-title { margin-bottom: 14px; }
+  .pf-create-btn {
+    font-family: var(--font); font-size: 12.5px; font-weight: 800; color: #fff;
+    background: linear-gradient(140deg, #0b7efc, #0a6ce0);
+    border: 0; border-radius: 999px; padding: 7px 14px; cursor: pointer;
+    box-shadow: 0 4px 12px rgba(11,126,252,.3);
+    transition: transform .12s ease;
+  }
+  .pf-create-btn:hover { transform: translateY(-1px); }
+  .pf-create-btn:active { transform: scale(.96); }
 
   /* ===== 动态 ===== */
   .pf-moment {
@@ -655,6 +748,13 @@ function coming(t) { toast(t + ' 开发中 🚧') }
     overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
   }
   .pf-card-info span { font-size: 11.5px; color: #8a94a6; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .pf-card-ops { display: flex; gap: 10px; margin-top: 2px; }
+  .pf-card-ops button {
+    font-family: var(--font); font-size: 11.5px; font-weight: 700;
+    border: 0; background: none; padding: 0; cursor: pointer; color: #0b7efc;
+  }
+  .pf-card-ops button:hover { text-decoration: underline; }
+  .pf-card-ops button.del { color: #ef4444; }
 
   /* ===== 歌曲列表 ===== */
   .pf-songlist { display: flex; flex-direction: column; }
@@ -756,6 +856,35 @@ function coming(t) { toast(t + ' 开发中 🚧') }
     transition: background .15s ease, color .15s ease;
   }
   .pf-user-btn:hover { background: #fef0f2; color: #e03131; border-color: #f7d4d4; }
+
+  /* ===== 歌单新建/重命名弹窗 ===== */
+  .pf-mask {
+    position: fixed; inset: 0; z-index: 80;
+    background: rgba(15, 23, 42, 0.45);
+    display: grid; place-items: center; padding: 20px;
+  }
+  .pf-modal {
+    width: min(380px, 100%);
+    background: #fff; border: 3px solid var(--ink); border-radius: 20px;
+    box-shadow: 8px 8px 0 rgba(47,50,56,.9);
+    padding: 24px 22px 20px;
+  }
+  .pf-modal h3 { font-size: 18px; font-weight: 800; margin-bottom: 16px; }
+  .pf-modal-input {
+    font-family: var(--font); font-size: 14px; font-weight: 600; color: var(--ink);
+    width: 100%; border: 2.5px solid var(--ink); border-radius: 12px;
+    padding: 11px 13px; background: #fff; outline: 0;
+  }
+  .pf-modal-input:focus { background: #f7fbff; box-shadow: 3px 3px 0 var(--shark-blue); }
+  .pf-modal-foot { display: flex; justify-content: flex-end; gap: 10px; margin-top: 18px; }
+  .pf-modal-cancel, .pf-modal-ok {
+    font-family: var(--font); font-size: 14px; font-weight: 800;
+    border: 2.5px solid var(--ink); border-radius: 12px; padding: 9px 20px; cursor: pointer;
+  }
+  .pf-modal-cancel { background: #fff; color: var(--ink); box-shadow: 3px 3px 0 var(--ink); }
+  .pf-modal-cancel:hover { background: #f1f4f8; }
+  .pf-modal-ok { background: linear-gradient(140deg, #0b7efc, #0a6ce0); color: #fff; box-shadow: 3px 3px 0 var(--ink); }
+  .pf-modal-ok:hover { filter: brightness(1.05); }
 
   @media (max-width: 940px) {
     .pf-hero { height: auto; }

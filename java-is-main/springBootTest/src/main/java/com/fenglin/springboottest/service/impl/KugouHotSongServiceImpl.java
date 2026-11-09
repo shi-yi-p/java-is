@@ -1,6 +1,7 @@
 package com.fenglin.springboottest.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.fenglin.springboottest.common.SongIdResolver;
 import com.fenglin.springboottest.entity.KugouHotSong;
 import com.fenglin.springboottest.mapper.KugouHotSongMapper;
 import com.fenglin.springboottest.service.KugouHotSongService;
@@ -18,10 +19,15 @@ public class KugouHotSongServiceImpl implements KugouHotSongService {
     @Autowired
     private KugouHotSongMapper kugouHotSongMapper;
 
+    @Autowired
+    private SongIdResolver songIdResolver;
+
     @Override
     public List<KugouHotSong> hotSongs() {
-        return kugouHotSongMapper.selectList(
+        List<KugouHotSong> list = kugouHotSongMapper.selectList(
                 new LambdaQueryWrapper<KugouHotSong>()
                         .orderByAsc(KugouHotSong::getRankNo));
+        songIdResolver.fillSongIds(list, KugouHotSong::getTitle, KugouHotSong::getArtist, KugouHotSong::setSongId);
+        return list;
     }
 }

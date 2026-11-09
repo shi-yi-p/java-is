@@ -6,17 +6,21 @@ import com.fenglin.springboottest.dto.ProfileVO;
 import com.fenglin.springboottest.dto.RankUserVO;
 import com.fenglin.springboottest.entity.Song;
 import com.fenglin.springboottest.entity.User;
+import com.fenglin.springboottest.entity.UserPlaylist;
 import com.fenglin.springboottest.service.ProfileService;
-import com.fenglin.springboottest.service.UserService;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * 个人主页接口。所有接口都需登录（由 JwtInterceptor 校验并注入 account）。
@@ -29,17 +33,10 @@ public class ProfileController {
     @Autowired
     private ProfileService profileService;
 
-    @Autowired
-    private UserService userService;
-
-    /** 从拦截器注入的 account 反查用户 id */
+    /** 直接从拦截器注入的 userId 读取，避免重复查库（account → id） */
     private Long resolveUserId(HttpServletRequest request) {
-        String account = (String) request.getAttribute("account");
-        if (account == null) {
-            return null;
-        }
-        User user = userService.lambdaQuery().eq(User::getAccount, account).one();
-        return user != null ? user.getId() : null;
+        Object uid = request.getAttribute("userId");
+        return uid instanceof Long ? (Long) uid : null;
     }
 
     /** 个人主页汇总 */
@@ -145,5 +142,55 @@ public class ProfileController {
         Long uid = resolveUserId(request);
         if (uid == null) return Result.fail(401, "未登录");
         return Result.ok("听歌总排名", profileService.listenRanking());
+    }
+
+    /* ============ 个人歌单（按 user_id 隔离） ============ */
+
+    /** 我的歌单列表 */
+    @GetMapping("/playlists")
+    public Result<List<UserPlaylist>> myPlaylists(HttpServletRequest request) {
+        Long uid = resolveUserId(request);
+        if (uid == null) return Result.fail(401, "未登录");
+        return Result.ok("我的歌单", profileService.myPlaylists(uid));
+    }
+
+    /** 新建歌单（body: name, coverTone） */
+    @PostMapping("/playlist")
+    public Result<UserPlaylist> createPlaylist(@RequestBody Map<String, String> body,
+                                                HttpServletRequest request) {
+        Long uid = resolveUserId(request);
+        if (uid == null) return Result.fail(401, "未登录");
+        try {
+            UserPlaylist p = profileService.createPlaylist(uid, body.get("name"), body.get("coverTone"));
+            return p != null ? Result.ok("歌单创建成功 🦈", p)
+                    : Result.fail(409, "已存在同名歌单");
+        } catch (IllegalArgumentException e) {
+            return Result.fail(400, e.getMessage());
+        }
+    }
+
+    /** 重命名歌单（body: name） */
+    @PostMapping("/playlist/{id}/rename")
+    public Result<UserPlaylist> renamePlaylist(@PathVariable Long id,
+                                                @RequestBody Map<String, String> body,
+                                                HttpServletRequest request) {
+        Long uid = resolveUserId(request);
+        if (uid == null) return Result.fail(401, "未登录");
+        try {
+            UserPlaylist p = profileService.renamePlaylist(uid, id, body.get("name"));
+            return p != null ? Result.ok("已重命名", p)
+                    : Result.fail(404, "歌单不存在或不属于你");
+        } catch (IllegalArgumentException e) {
+            return Result.fail(400, e.getMessage());
+        }
+    }
+
+    /** 删除歌单（逻辑删除，仅能删自己的） */
+    @DeleteMapping("/playlist/{id}")
+    public Result<Void> deletePlaylist(@PathVariable Long id, HttpServletRequest request) {
+        Long uid = resolveUserId(request);
+        if (uid == null) return Result.fail(401, "未登录");
+        boolean ok = profileService.deletePlaylist(uid, id);
+        return ok ? Result.ok("已删除歌单 🗑️") : Result.fail(404, "歌单不存在或不属于你");
     }
 }

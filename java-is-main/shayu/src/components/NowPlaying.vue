@@ -3,10 +3,9 @@
  * 正在播放（酷狗式全屏详情页）
  * 由 HomeView 的 <NowPlaying v-if="player.open" /> 渲染
  * ============================================================ */
-import { player, togglePlay, next, prev, seek, fmtTime, playTrack, cycleMode } from '../player.js'
+import { player, togglePlay, next, prev, seek, fmtTime, playTrack, cycleMode, isFavorite, toggleFavorite } from '../player.js'
 import { ref, computed, watch, nextTick } from 'vue'
 
-const like = ref(false)
 const lyricMode = ref(true)
 
 const percent = computed(() =>
@@ -24,8 +23,7 @@ function toast(msg) {
 }
 
 function toggleLike() {
-  like.value = !like.value
-  toast(like.value ? '已收藏 ❤️' : '已取消收藏')
+  toggleFavorite(player.song).then(msg => toast(msg))
 }
 
 function close() {
@@ -131,8 +129,8 @@ const waveBars = computed(() => {
         <em>正在播放</em>
         <b>{{ player.song ? player.song.title : '未在播放' }}</b>
       </div>
-      <button class="np-like" :class="{ on: like }" type="button" title="收藏" @click="toggleLike">
-        {{ like ? '❤️' : '🤍' }}
+      <button class="np-like" :class="{ on: isFavorite(player.song) }" type="button" title="收藏" @click="toggleLike">
+        {{ isFavorite(player.song) ? '❤️' : '🤍' }}
       </button>
     </header>
 
@@ -190,7 +188,7 @@ const waveBars = computed(() => {
 
       <!-- 控制按钮 -->
       <div class="np-ctrl">
-        <button class="np-ctrl-btn" type="button" @click="like = !like; toggleLike()">♡</button>
+        <button class="np-ctrl-btn" type="button" :class="{ on: isFavorite(player.song) }" @click="toggleLike">♡</button>
         <button class="np-ctrl-btn skip" type="button" title="上一首" @click="prev">⏮</button>
         <button class="np-ctrl-btn main" type="button" @click="togglePlay">
           {{ player.playing ? '⏸' : '▶' }}

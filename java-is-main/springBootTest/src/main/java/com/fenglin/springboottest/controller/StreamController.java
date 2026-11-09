@@ -42,6 +42,12 @@ public class StreamController {
     /** 单次可合成的最大时长（秒），防止传入超大 duration 撑爆内存 */
     private static final int MAX_SECONDS = 600;
 
+    /** 合成音源缓存：key = seed:seconds → 完整 WAV 字节，避免 seek/重复播放时反复合成 */
+    private final java.util.concurrent.ConcurrentHashMap<String, byte[]> wavCache = new java.util.concurrent.ConcurrentHashMap<>();
+
+    /** 缓存上限（首数），防止内存无限增长 */
+    private static final int MAX_CACHE_ENTRIES = 256;
+
     @Autowired
     private SongMapper songMapper;
 
@@ -90,9 +96,25 @@ public class StreamController {
         // 歌曲标识：有歌用歌的 id，否则用 id 参数，兜底 1
         long seed = (song != null && song.getId() != null) ? song.getId() : (id != null ? id : 1L);
 
-        byte[] wav = synthWav(seed, seconds);
+        byte[] wav = cachedWav(seed, seconds);
 
         return buildResponse(wav, range);
+    }
+
+    /** 带缓存的合成：同一首歌（seed+时长）只合成一次，后续命中缓存 */
+    private byte[] cachedWav(long seed, int seconds) {
+        String key = seed + ":" + seconds;
+        byte[] cached = wavCache.get(key);
+        if (cached != null) {
+            return cached;
+        }
+        byte[] wav = synthWav(seed, seconds);
+        // 简单容量控制：超过上限时清空缓存，避免内存无限增长
+        if (wavCache.size() >= MAX_CACHE_ENTRIES) {
+            wavCache.clear();
+        }
+        wavCache.put(key, wav);
+        return wav;
     }
 
     private boolean hasText(String s) {
