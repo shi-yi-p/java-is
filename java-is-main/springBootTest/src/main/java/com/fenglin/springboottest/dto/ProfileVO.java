@@ -20,6 +20,12 @@ public class ProfileVO {
     /** 昵称 */
     private String nickname;
 
+    /** 头像（URL 或 emoji，空则前端用昵称首字母） */
+    private String avatar;
+
+    /** UID（对外唯一标识 = 10000 + id） */
+    private Long uid;
+
     /** 关注数（我关注的人） */
     private long following;
 
@@ -46,4 +52,7 @@ public class ProfileVO {
 
     /** 距离下一等级还需的听歌秒数 */
     private long nextLevelSeconds;
+
+    /** 当前等级进度百分比（0~100，用于进度条，满级 100） */
+    private int progress;
 }

@@ -4,6 +4,8 @@ import com.fenglin.springboottest.common.Result;
 import com.fenglin.springboottest.dto.MomentVO;
 import com.fenglin.springboottest.dto.ProfileVO;
 import com.fenglin.springboottest.dto.RankUserVO;
+import com.fenglin.springboottest.dto.SongListenStat;
+import com.fenglin.springboottest.dto.UserProfileVO;
 import com.fenglin.springboottest.entity.Song;
 import com.fenglin.springboottest.entity.User;
 import com.fenglin.springboottest.entity.UserPlaylist;
@@ -81,6 +83,40 @@ public class ProfileController {
         return Result.ok("粉丝", profileService.followers(uid));
     }
 
+    /** 好友列表（互相关注） */
+    @GetMapping("/friends")
+    public Result<List<User>> friends(HttpServletRequest request) {
+        Long uid = resolveUserId(request);
+        if (uid == null) return Result.fail(401, "未登录");
+        return Result.ok("好友", profileService.friends(uid));
+    }
+
+    /** 单曲听歌统计（每首歌的次数与累计时长） */
+    @GetMapping("/listen-stats")
+    public Result<List<SongListenStat>> listenStats(HttpServletRequest request) {
+        Long uid = resolveUserId(request);
+        if (uid == null) return Result.fail(401, "未登录");
+        return Result.ok("听歌统计", profileService.songListenStats(uid));
+    }
+
+    /** 更新头像（body: avatar，存 URL 或 emoji） */
+    @PostMapping("/avatar")
+    public Result<User> updateAvatar(@RequestBody Map<String, String> body, HttpServletRequest request) {
+        Long uid = resolveUserId(request);
+        if (uid == null) return Result.fail(401, "未登录");
+        User updated = profileService.updateAvatar(uid, body.get("avatar"));
+        return updated != null ? Result.ok("头像已更新", updated) : Result.fail(400, "头像不能为空");
+    }
+
+    /** 更新昵称（body: nickname） */
+    @PostMapping("/nickname")
+    public Result<User> updateNickname(@RequestBody Map<String, String> body, HttpServletRequest request) {
+        Long uid = resolveUserId(request);
+        if (uid == null) return Result.fail(401, "未登录");
+        User updated = profileService.updateNickname(uid, body.get("nickname"));
+        return updated != null ? Result.ok("昵称已更新", updated) : Result.fail(400, "昵称不能为空");
+    }
+
     /** 动态列表 */
     @GetMapping("/moments")
     public Result<List<MomentVO>> moments(HttpServletRequest request) {
@@ -142,6 +178,24 @@ public class ProfileController {
         Long uid = resolveUserId(request);
         if (uid == null) return Result.fail(401, "未登录");
         return Result.ok("听歌总排名", profileService.listenRanking());
+    }
+
+    /** 浏览他人主页（只读）：返回对方资料 + 当前用户与对方的关系 */
+    @GetMapping("/visit")
+    public Result<UserProfileVO> visit(@RequestParam Long userId, HttpServletRequest request) {
+        Long uid = resolveUserId(request);
+        if (uid == null) return Result.fail(401, "未登录");
+        if (uid.equals(userId)) return Result.fail(400, "这是你自己的主页，请在「个人主页」查看");
+        UserProfileVO vo = profileService.visitProfile(uid, userId);
+        return vo != null ? Result.ok("用户主页", vo) : Result.fail(404, "用户不存在");
+    }
+
+    /** 浏览他人动态（只读）：返回对方的动态列表 */
+    @GetMapping("/visit/moments")
+    public Result<List<MomentVO>> visitMoments(@RequestParam Long userId, HttpServletRequest request) {
+        Long uid = resolveUserId(request);
+        if (uid == null) return Result.fail(401, "未登录");
+        return Result.ok("动态", profileService.moments(userId));
     }
 
     /* ============ 个人歌单（按 user_id 隔离） ============ */

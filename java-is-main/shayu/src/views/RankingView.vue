@@ -19,6 +19,11 @@ function authHeaders() {
 const ranking = ref([])
 const loading = ref(false)
 
+/* 当前用户 id 与已关注集合：用于排行榜上的关注按钮初始状态 */
+const myId = ref(null)
+const followedSet = ref(new Set())
+const followBusy = ref(false)
+
 async function loadRanking() {
   loading.value = true
   try {
@@ -31,7 +36,59 @@ async function loadRanking() {
     loading.value = false
   }
 }
-onMounted(loadRanking)
+
+/* 加载当前用户资料（拿 id）+ 已关注列表（拿关注状态） */
+async function loadMeta() {
+  try {
+    const res = await fetch(API + '/api/profile', { headers: authHeaders() })
+    const d = await res.json().catch(() => ({}))
+    if (res.ok && d.data) myId.value = d.data.id || null
+  } catch (e) { /* 静默 */ }
+  try {
+    const res = await fetch(API + '/api/profile/following', { headers: authHeaders() })
+    const d = await res.json().catch(() => ({}))
+    if (res.ok && Array.isArray(d.data)) followedSet.value = new Set(d.data.map(u => u.id))
+  } catch (e) { /* 静默 */ }
+}
+
+function isFollowing(u) { return followedSet.value.has(u.userId) }
+function isSelf(u) { return u.userId != null && u.userId === myId.value }
+
+async function toggleFollow(u) {
+  if (followBusy.value || isSelf(u)) return
+  const nowFollow = !followedSet.value.has(u.userId)
+  // 乐观更新
+  const next = new Set(followedSet.value)
+  if (nowFollow) next.add(u.userId); else next.delete(u.userId)
+  followedSet.value = next
+  followBusy.value = true
+  try {
+    const path = nowFollow ? '/api/profile/follow' : '/api/profile/unfollow'
+    const res = await fetch(API + path + '?targetId=' + u.userId, { method: 'POST', headers: authHeaders() })
+    const d = await res.json().catch(() => ({}))
+    if (!res.ok) {
+      // 失败回滚
+      const rev = new Set(followedSet.value)
+      if (nowFollow) rev.delete(u.userId); else rev.add(u.userId)
+      followedSet.value = rev
+      toast(d.message || '操作失败')
+    } else {
+      toast(d.message || (nowFollow ? '已关注 ✅' : '已取消关注'))
+    }
+  } catch (e) {
+    const rev = new Set(followedSet.value)
+    if (nowFollow) rev.delete(u.userId); else rev.add(u.userId)
+    followedSet.value = rev
+    toast('网络错误，请稍后重试 🔌')
+  } finally {
+    followBusy.value = false
+  }
+}
+
+/* 进他人主页浏览 */
+function goUser(u) { location.hash = '#/user/' + u.userId }
+
+onMounted(() => { loadRanking(); loadMeta() })
 
 function fmtDuration(sec) {
   const v = Math.floor(Number(sec) || 0)
@@ -85,10 +142,21 @@ function goHome() { location.hash = '#/home' }
             :class="'p' + u.rank"
           >
             <div class="rk-podium-medal">{{ medal(u.rank) }}</div>
-            <span class="rk-podium-ava">{{ u.avatarLetter }}</span>
-            <b class="rk-podium-name">{{ u.nickname }}</b>
+            <span class="rk-podium-ava" @click="goUser(u)" style="cursor:pointer">{{ u.avatarLetter }}</span>
+            <b class="rk-podium-name" @click="goUser(u)" style="cursor:pointer">{{ u.nickname }}</b>
             <span class="rk-podium-dur">{{ fmtDuration(u.listenSeconds) }}</span>
             <span class="rk-podium-level">Lv.{{ u.level }} {{ u.levelName }}</span>
+            <div class="rk-podium-actions">
+              <button
+                v-if="!isSelf(u)"
+                class="rk-btn"
+                :class="{ on: isFollowing(u) }"
+                type="button"
+                :disabled="followBusy"
+                @click="toggleFollow(u)"
+              >{{ isFollowing(u) ? '✓ 已关注' : '＋ 关注' }}</button>
+              <button class="rk-btn ghost" type="button" @click="goUser(u)">进主页 ›</button>
+            </div>
           </div>
         </div>
 
@@ -96,10 +164,21 @@ function goHome() { location.hash = '#/home' }
         <div v-if="ranking.length" class="rk-list">
           <div v-for="u in ranking" :key="u.userId" class="rk-item" :class="{ top: u.rank <= 3 }">
             <span class="rk-rank" :class="'r' + u.rank">{{ u.rank <= 3 ? medal(u.rank) : u.rank }}</span>
-            <span class="rk-ava">{{ u.avatarLetter }}</span>
-            <div class="rk-info">
+            <span class="rk-ava" @click="goUser(u)" style="cursor:pointer">{{ u.avatarLetter }}</span>
+            <div class="rk-info" @click="goUser(u)" style="cursor:pointer">
               <b>{{ u.nickname }}</b>
               <span>Lv.{{ u.level }} · {{ u.levelName }} · 播放 {{ fmtPlays(u.playCount) }} 次</span>
+            </div>
+            <div class="rk-actions">
+              <button
+                v-if="!isSelf(u)"
+                class="rk-btn"
+                :class="{ on: isFollowing(u) }"
+                type="button"
+                :disabled="followBusy"
+                @click.stop="toggleFollow(u)"
+              >{{ isFollowing(u) ? '✓' : '＋' }}</button>
+              <button class="rk-btn ghost" type="button" @click.stop="goUser(u)">进主页</button>
             </div>
             <span class="rk-dur">{{ fmtDuration(u.listenSeconds) }}</span>
           </div>
@@ -175,6 +254,26 @@ function goHome() { location.hash = '#/home' }
   .rk-podium-name { font-size: 14px; font-weight: 800; color: var(--ink); }
   .rk-podium-dur { font-size: 12.5px; color: #0b7efc; font-weight: 700; }
   .rk-podium-level { font-size: 11px; color: #9aa5b5; font-weight: 600; }
+
+  /* ===== 关注 / 进主页 按钮（前三名 + 列表通用） ===== */
+  .rk-podium-actions { display: flex; gap: 8px; margin-top: 10px; }
+  .rk-actions { display: flex; align-items: center; gap: 8px; flex: none; }
+  .rk-btn {
+    font-family: var(--font); font-size: 12px; font-weight: 800; white-space: nowrap;
+    color: #fff; background: linear-gradient(140deg, #0b7efc, #0a6ce0);
+    border: 1px solid transparent; border-radius: 999px;
+    padding: 6px 14px; cursor: pointer;
+    box-shadow: 0 4px 12px rgba(11,126,252,.3);
+    transition: transform .12s ease, filter .15s ease, background .15s ease, color .15s ease;
+  }
+  .rk-btn:hover { filter: brightness(1.05); }
+  .rk-btn:active { transform: scale(0.95); }
+  .rk-btn:disabled { opacity: 0.7; cursor: default; }
+  .rk-btn.on { color: #0b7efc; background: #fff; border-color: #0b7efc; box-shadow: none; }
+  .rk-btn.ghost {
+    color: #0b7efc; background: #eef5ff; border-color: #d6e6ff; box-shadow: none;
+  }
+  .rk-btn.ghost:hover { background: #e0edff; }
 
   /* ===== 完整排行列表 ===== */
   .rk-list { display: flex; flex-direction: column; gap: 10px; }

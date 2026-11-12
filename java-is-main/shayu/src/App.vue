@@ -5,6 +5,7 @@ import HomeView from './views/HomeView.vue'
 import ProfileView from './views/ProfileView.vue'
 import ForumView from './views/ForumView.vue'
 import RankingView from './views/RankingView.vue'
+import UserView from './views/UserView.vue'
 import AdminLoginView from './views/AdminLoginView.vue'
 import AdminDashboardView from './views/AdminDashboardView.vue'
 
@@ -30,17 +31,18 @@ const readAdminToken = () => {
 const HOME_PAGES = ['home', 'rank', 'audiobook', 'live']
 
 /* 需要登录的独立页面 */
-const AUTH_PAGES = ['profile', 'forum', 'ranking']
+const AUTH_PAGES = ['profile', 'forum', 'ranking', 'user']
 
 /* 归一化：rank/audiobook 也由 HomeView 渲染，避免落到模板兜底分支 */
 const toView = r => (HOME_PAGES.includes(r) ? 'home' : r)
 
 function resolveRoute() {
-  const h = location.hash.replace(/^#\/?/, '').split('?')[0]
-  if (h === 'admin' || h === 'admin-login') return h        /* 后台管理 */
-  if (h === 'login') return h
-  if (AUTH_PAGES.includes(h)) return h                       /* 个人主页/论坛/聊天/排名 */
-  if (HOME_PAGES.includes(h)) return h
+  const raw = location.hash.replace(/^#\/?/, '').split('?')[0]
+  const seg = raw.split('/')[0] || 'home'
+  if (seg === 'admin' || seg === 'admin-login') return seg     /* 后台管理 */
+  if (seg === 'login') return seg
+  if (AUTH_PAGES.includes(seg)) return seg                     /* 个人主页/论坛/排名/他人主页 */
+  if (HOME_PAGES.includes(seg)) return seg
   return readToken() ? 'home' : 'login'   /* 默认：有 token 进首页，否则进登录页 */
 }
 
@@ -51,8 +53,10 @@ function applyRoute() {
   if (r === 'admin' && !readAdminToken()) r = 'admin-login'   /* 未登录访问后台 → 回后台登录页 */
   if (AUTH_PAGES.includes(r) && !readToken()) r = 'login'      /* 未登录访问受保护页 → 回登录页 */
   if (HOME_PAGES.includes(r) && !readToken()) r = 'login'      /* 未登录访问首页/榜单/听书 → 回登录页 */
-  route.value = toView(r)                                     /* 统一交给 HomeView 渲染 */
-  const target = '#/' + r
+  route.value = toView(r)                                     /* 统一交给对应视图渲染 */
+  /* 保留完整路径（含路径参数，如 #/user/123），避免被归一化截断 */
+  const full = location.hash.replace(/^#\/?/, '').split('?')[0]
+  const target = '#/' + full
   if (location.hash !== target) location.hash = target
 }
 
@@ -96,6 +100,7 @@ const pearls = ref([])
   <ProfileView v-else-if="route === 'profile'" />
   <ForumView v-else-if="route === 'forum'" />
   <RankingView v-else-if="route === 'ranking'" />
+  <UserView v-else-if="route === 'user'" />
   <AdminLoginView v-else-if="route === 'admin-login'" />
   <AdminDashboardView v-else />
 </template>

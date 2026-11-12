@@ -7,7 +7,17 @@ const API = ''
 const account = ref('')
 const nickname = ref('')
 const userId = ref(null)
-const avatarLetter = computed(() => (nickname.value || account.value || '鲨').slice(0, 1))
+const avatarLetter = computed(() => {
+  const av = profile.value && profile.value.avatar
+  if (av && av.trim()) return av.trim()
+  return (nickname.value || account.value || '鲨').slice(0, 1)
+})
+/* UID：后端 ProfileVO 已返回 uid，兜底本地算 */
+const uid = computed(() => {
+  const p = profile.value
+  if (p && p.uid != null) return p.uid
+  return p && p.id ? 10000 + Number(p.id) : null
+})
 
 const toastMsg = ref('')
 let toastTimer = null
@@ -24,7 +34,7 @@ function authHeaders() {
 }
 
 /* ============ Tab 切换 ============ */
-const tabs = ['动态', '我的歌单', '收藏', '听歌排行', '关注']
+const tabs = ['动态', '我的歌单', '收藏', '听歌排行', '听歌统计', '好友', '关注']
 const activeTab = ref('动态')
 
 /* ============ 真实数据 ============ */
@@ -32,9 +42,11 @@ const profile = ref(null)          /* 汇总：关注/粉丝/收藏/播放/歌�
 const playlists = ref([])          /* 我的歌单（精选歌单，暂无个人歌单接口） */
 const favoriteSongs = ref([])      /* 收藏的歌曲（真实） */
 const rankSongs = ref([])          /* 听歌排行（真实播放历史） */
+const listenStats = ref([])        /* 听歌统计（每首歌次数+时长） */
 const moments = ref([])            /* 动态（真实） */
 const followingUsers = ref([])     /* 关注的人（真实） */
 const followerUsers = ref([])      /* 粉丝（真实） */
+const friendUsers = ref([])        /* 好友（互相关注） */
 
 async function loadProfile() {
   const h = authHeaders()
@@ -71,8 +83,8 @@ async function loadProfile() {
     if (res.ok && Array.isArray(d.data)) playlists.value = d.data
   } catch (e) { /* 静默 */ }
 
-  // 4) 收藏 / 排行 / 动态 / 关注 / 粉丝（并行）
-  await Promise.all([loadFavorites(), loadHistory(), loadMoments(), loadFollowing(), loadFollowers()])
+  // 4) 收藏 / 排行 / 动态 / 关注 / 粉丝 / 好友 / 听歌统计（并行）
+  await Promise.all([loadFavorites(), loadHistory(), loadMoments(), loadFollowing(), loadFollowers(), loadFriends(), loadListenStats()])
 }
 
 async function loadFavorites() {
@@ -89,6 +101,22 @@ async function loadHistory() {
     const d = await res.json().catch(() => ({}))
     rankSongs.value = (res.ok && Array.isArray(d.data)) ? d.data : []
   } catch (e) { rankSongs.value = [] }
+}
+
+async function loadFriends() {
+  try {
+    const res = await fetch(API + '/api/profile/friends', { headers: authHeaders() })
+    const d = await res.json().catch(() => ({}))
+    friendUsers.value = (res.ok && Array.isArray(d.data)) ? d.data : []
+  } catch (e) { friendUsers.value = [] }
+}
+
+async function loadListenStats() {
+  try {
+    const res = await fetch(API + '/api/profile/listen-stats', { headers: authHeaders() })
+    const d = await res.json().catch(() => ({}))
+    listenStats.value = (res.ok && Array.isArray(d.data)) ? d.data : []
+  } catch (e) { listenStats.value = [] }
 }
 
 async function loadMoments() {
@@ -143,12 +171,14 @@ function fmtDuration(sec) {
   return Math.floor(v / 3600) + ' 小时 ' + Math.floor((v % 3600) / 60) + ' 分'
 }
 
-/* 等级进度百分比（用于进度条） */
+/* 等级进度百分比：优先用后端返回的 progress，兜底本地计算 */
 const levelProgress = computed(() => {
+  const p = profile.value
+  if (p && typeof p.progress === 'number') {
+    return Math.min(100, Math.max(0, p.progress))
+  }
+  // 兜底：后端未返回 progress 时本地估算
   const sec = listenSeconds.value
-  const next = nextLevelSeconds.value
-  if (next <= 0) return 100
-  // 当前等级起点估算：用相邻等级阈值差
   const thresholds = [0, 600, 3600, 21600, 86400, 360000, 1800000, 7200000, 36000000, 180000000]
   const lv = Math.max(0, Math.min(9, level.value - 1))
   const base = thresholds[lv]
@@ -157,6 +187,9 @@ const levelProgress = computed(() => {
   if (span <= 0) return 100
   return Math.min(100, Math.max(0, Math.round(((sec - base) / span) * 100)))
 })
+
+/* 是否满级 */
+const isMaxLevel = computed(() => level.value >= 10)
 
 function fmtPlays(n) {
   const v = Number(n) || 0
@@ -292,8 +325,48 @@ function goHome() { location.hash = '#/home' }
 /* 跳转听歌总排名榜 */
 function goRanking() { location.hash = '#/ranking' }
 
-/* 编辑资料（演示） */
-function editProfile() { toast('编辑资料功能开发中 🚧') }
+/* 编辑资料（真实：改头像 + 昵称） */
+const showEditModal = ref(false)
+const editNickname = ref('')
+const editAvatar = ref('')
+const AVATAR_PRESETS = ['🦈', '🐬', '🐳', '🐟', '🐙', '🦀', '🎵', '🎧', '🎸', '🎤', '⭐', '🔥']
+
+function openEditProfile() {
+  editNickname.value = nickname.value || ''
+  editAvatar.value = profile.value && profile.value.avatar ? profile.value.avatar : ''
+  showEditModal.value = true
+}
+
+function pickAvatar(a) {
+  editAvatar.value = a
+}
+
+async function saveEditProfile() {
+  const nn = editNickname.value.trim()
+  if (!nn) return toast('昵称不能为空')
+  try {
+    // 改昵称
+    let res = await fetch(API + '/api/profile/nickname', {
+      method: 'POST', headers: { 'Content-Type': 'application/json', ...authHeaders() },
+      body: JSON.stringify({ nickname: nn })
+    })
+    let d = await res.json().catch(() => ({}))
+    if (!res.ok) { toast(d.message || '昵称更新失败'); return }
+    // 改头像
+    if (editAvatar.value.trim()) {
+      res = await fetch(API + '/api/profile/avatar', {
+        method: 'POST', headers: { 'Content-Type': 'application/json', ...authHeaders() },
+        body: JSON.stringify({ avatar: editAvatar.value.trim() })
+      })
+      d = await res.json().catch(() => ({}))
+      if (!res.ok) { toast(d.message || '头像更新失败'); return }
+    }
+    toast('资料已更新 ✅')
+    showEditModal.value = false
+    loadProfile()
+  } catch (e) { toast('网络错误，请稍后重试 🔌') }
+}
+
 function coming(t) { toast(t + ' 开发中 🚧') }
 </script>
 
@@ -318,14 +391,25 @@ function coming(t) { toast(t + ' 开发中 🚧') }
           <div class="pf-name-row">
             <h1>{{ nickname || '鲨鲨乐迷' }}</h1>
             <span class="pf-vip">{{ levelName }}</span>
-            <button class="pf-edit" type="button" @click="editProfile">✎ 编辑资料</button>
+            <button class="pf-edit" type="button" @click="openEditProfile">✎ 编辑资料</button>
           </div>
-          <p class="pf-account">账号：{{ account || '未登录' }}</p>
-          <p class="pf-sign">累计听歌 {{ fmtDuration(listenSeconds) }} · 再听 {{ fmtDuration(nextLevelSeconds) }} 升级 🎧</p>
+          <p class="pf-account">账号：{{ account || '未登录' }} · UID：{{ uid || '—' }}</p>
 
-          <!-- 等级进度条 -->
-          <div class="pf-level-bar">
-            <div class="pf-level-fill" :style="{ width: levelProgress + '%' }"></div>
+          <!-- 鲨鱼等级卡片（醒目展示） -->
+          <div class="pf-level-card">
+            <div class="pf-level-card-top">
+              <span class="pf-level-lv">Lv.{{ level }}</span>
+              <span class="pf-level-name">{{ levelName }}</span>
+              <span v-if="isMaxLevel" class="pf-level-max">👑 已满级</span>
+              <span v-else class="pf-level-next">距下一级还需 {{ fmtDuration(nextLevelSeconds) }}</span>
+            </div>
+            <div class="pf-level-bar">
+              <div class="pf-level-fill" :style="{ width: levelProgress + '%' }"></div>
+            </div>
+            <div class="pf-level-card-bottom">
+              <span>累计听歌 {{ fmtDuration(listenSeconds) }}</span>
+              <span class="pf-level-pct">{{ levelProgress }}%</span>
+            </div>
           </div>
 
           <div class="pf-stats">
@@ -437,14 +521,55 @@ function coming(t) { toast(t + ' 开发中 🚧') }
           </div>
         </template>
 
+        <!-- 听歌统计 -->
+        <template v-else-if="activeTab === '听歌统计'">
+          <div class="pf-block">
+            <h3 class="pf-block-title">听歌统计 <em>共 {{ listenStats.length }} 首</em></h3>
+            <div v-if="listenStats.length" class="pf-songlist">
+              <div v-for="(s, i) in listenStats" :key="s.songId" class="pf-song">
+                <span class="pf-song-idx" :class="{ top: i < 3 }">{{ i + 1 }}</span>
+                <div class="pf-song-meta">
+                  <b>{{ s.title }}</b>
+                  <span>{{ s.artist }}</span>
+                </div>
+                <span class="pf-stat-cell">{{ s.playCount }} 次</span>
+                <span class="pf-stat-cell strong">{{ fmtDuration(s.totalSeconds) }}</span>
+              </div>
+            </div>
+            <div v-else class="pf-empty">还没有听歌记录，去听几首歌吧 🎧</div>
+          </div>
+        </template>
+
+        <!-- 好友 -->
+        <template v-else-if="activeTab === '好友'">
+          <div class="pf-block">
+            <h3 class="pf-block-title">好友 <em>{{ friendUsers.length }}</em></h3>
+            <p class="pf-block-hint">互相关注即成为好友 🐟</p>
+            <div v-if="friendUsers.length" class="pf-userlist">
+              <div v-for="u in friendUsers" :key="u.id" class="pf-user">
+                <span class="pf-user-ava">{{ u.avatar || (u.nickname || u.account).slice(0, 1) }}</span>
+                <div class="pf-user-mid">
+                  <span class="pf-user-name">{{ u.nickname || u.account }}</span>
+                  <span class="pf-user-uid">UID：{{ u.uid }}</span>
+                </div>
+                <button class="pf-user-btn" type="button" @click="unfollow(u)">解除好友</button>
+              </div>
+            </div>
+            <div v-else class="pf-empty">还没有好友，去关注别人并让对方回关吧 🤝</div>
+          </div>
+        </template>
+
         <!-- 关注 -->
         <template v-else>
           <div class="pf-block">
             <h3 class="pf-block-title">关注 <em>{{ followingUsers.length }}</em></h3>
             <div v-if="followingUsers.length" class="pf-userlist">
               <div v-for="u in followingUsers" :key="u.id" class="pf-user">
-                <span class="pf-user-ava">{{ (u.nickname || u.account).slice(0, 1) }}</span>
-                <span class="pf-user-name">{{ u.nickname || u.account }}</span>
+                <span class="pf-user-ava">{{ u.avatar || (u.nickname || u.account).slice(0, 1) }}</span>
+                <div class="pf-user-mid">
+                  <span class="pf-user-name">{{ u.nickname || u.account }}</span>
+                  <span class="pf-user-uid">UID：{{ u.uid }}</span>
+                </div>
                 <button class="pf-user-btn" type="button" @click="followingUsers = followingUsers.filter(x => x.id !== u.id); unfollow(u)">已关注</button>
               </div>
             </div>
@@ -455,8 +580,11 @@ function coming(t) { toast(t + ' 开发中 🚧') }
             <h3 class="pf-block-title">粉丝 <em>{{ followerUsers.length }}</em></h3>
             <div v-if="followerUsers.length" class="pf-userlist">
               <div v-for="u in followerUsers" :key="u.id" class="pf-user">
-                <span class="pf-user-ava">{{ (u.nickname || u.account).slice(0, 1) }}</span>
-                <span class="pf-user-name">{{ u.nickname || u.account }}</span>
+                <span class="pf-user-ava">{{ u.avatar || (u.nickname || u.account).slice(0, 1) }}</span>
+                <div class="pf-user-mid">
+                  <span class="pf-user-name">{{ u.nickname || u.account }}</span>
+                  <span class="pf-user-uid">UID：{{ u.uid }}</span>
+                </div>
               </div>
             </div>
             <div v-else class="pf-empty">还没有粉丝 🐟</div>
@@ -505,6 +633,36 @@ function coming(t) { toast(t + ' 开发中 🚧') }
         <div class="pf-modal-foot">
           <button class="pf-modal-cancel" type="button" @click="showPlaylistModal = false">取消</button>
           <button class="pf-modal-ok" type="button" @click="confirmPlaylist">{{ editingPlaylist ? '保存' : '创建' }}</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 编辑资料（头像 + 昵称）弹窗 -->
+    <div v-if="showEditModal" class="pf-mask" @click.self="showEditModal = false">
+      <div class="pf-modal pf-edit-modal">
+        <h3>编辑资料</h3>
+
+        <label class="pf-edit-label">头像</label>
+        <div class="pf-avatar-picker">
+          <button
+            v-for="a in AVATAR_PRESETS" :key="a" type="button"
+            class="pf-avatar-opt" :class="{ on: editAvatar === a }"
+            @click="pickAvatar(a)"
+          >{{ a }}</button>
+        </div>
+
+        <label class="pf-edit-label">昵称</label>
+        <input
+          class="pf-modal-input"
+          v-model="editNickname"
+          type="text"
+          maxlength="20"
+          placeholder="输入新昵称"
+        />
+
+        <div class="pf-modal-foot">
+          <button class="pf-modal-cancel" type="button" @click="showEditModal = false">取消</button>
+          <button class="pf-modal-ok" type="button" @click="saveEditProfile">保存</button>
         </div>
       </div>
     </div>
@@ -573,11 +731,12 @@ function coming(t) { toast(t + ' 开发中 🚧') }
     font-size: 56px; font-weight: 800; color: var(--ink);
   }
   .pf-avatar-badge {
-    position: absolute; right: -4px; bottom: 8px;
-    font-style: normal; font-size: 11px; font-weight: 900;
-    color: #fff; background: linear-gradient(140deg, #f5c86a, #f59e0b);
+    position: absolute; right: -6px; bottom: 6px;
+    font-style: normal; font-size: 12px; font-weight: 900; letter-spacing: .5px;
+    color: #2f1c00; background: linear-gradient(140deg, #ffd166, #f5a623);
     border: 2px solid #fff; border-radius: 999px;
-    padding: 2px 9px;
+    padding: 3px 10px;
+    box-shadow: 0 3px 8px rgba(0,0,0,.3);
   }
   .pf-hero-info { flex: 1; min-width: 0; padding-top: 4px; }
   .pf-name-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
@@ -606,11 +765,47 @@ function coming(t) { toast(t + ' 开发中 🚧') }
   }
   .pf-stats span { font-size: 12px; color: rgba(255, 255, 255, 0.68); }
 
+  /* ===== 鲨鱼等级卡片 ===== */
+  .pf-level-card {
+    margin-top: 14px;
+    max-width: 460px;
+    background: rgba(255, 255, 255, 0.12);
+    border: 1px solid rgba(255, 255, 255, 0.22);
+    border-radius: 14px;
+    padding: 12px 16px;
+    backdrop-filter: blur(6px);
+  }
+  .pf-level-card-top {
+    display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  }
+  .pf-level-lv {
+    font-size: 15px; font-weight: 900; line-height: 1;
+    color: #2f1c00; background: linear-gradient(140deg, #ffd166, #f5c86a);
+    border-radius: 8px; padding: 5px 10px;
+    box-shadow: 0 2px 8px rgba(0,0,0,.25);
+  }
+  .pf-level-name {
+    font-size: 15px; font-weight: 800; color: #fff; letter-spacing: 1px;
+  }
+  .pf-level-max {
+    font-size: 12px; font-weight: 800; color: #ffd166; margin-left: auto;
+  }
+  .pf-level-next {
+    font-size: 12px; font-weight: 600; color: rgba(255, 255, 255, 0.78); margin-left: auto;
+  }
+  .pf-level-card-bottom {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-top: 8px; font-size: 12px; font-weight: 600; color: rgba(255, 255, 255, 0.72);
+  }
+  .pf-level-pct {
+    font-weight: 800; color: #ffd166; font-variant-numeric: tabular-nums;
+  }
+
   /* ===== 鲨鱼等级进度条 ===== */
   .pf-level-bar {
-    margin-top: 14px;
-    height: 8px;
-    max-width: 420px;
+    margin-top: 10px;
+    height: 9px;
+    width: 100%;
     border-radius: 999px;
     background: rgba(255, 255, 255, 0.18);
     overflow: hidden;
@@ -847,6 +1042,35 @@ function coming(t) { toast(t + ' 开发中 🚧') }
     flex: 1; min-width: 0; font-size: 14px; font-weight: 700; color: var(--ink);
     overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
   }
+  .pf-user-mid { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+  .pf-user-uid { font-size: 11px; color: #9aa5b5; font-variant-numeric: tabular-nums; }
+
+  /* ===== 听歌统计 ===== */
+  .pf-stat-cell {
+    flex: none; min-width: 64px; text-align: right;
+    font-size: 12px; color: #9aa5b5; font-variant-numeric: tabular-nums;
+  }
+  .pf-stat-cell.strong { color: #0b7efc; font-weight: 800; }
+
+  .pf-block-hint { font-size: 12px; color: #9aa5b5; margin: -6px 0 12px; }
+
+  /* ===== 编辑资料弹窗 ===== */
+  .pf-edit-modal { width: min(420px, 100%); }
+  .pf-edit-label {
+    display: block; font-size: 13px; font-weight: 700; color: #4a5568;
+    margin: 14px 0 8px;
+  }
+  .pf-avatar-picker {
+    display: flex; flex-wrap: wrap; gap: 8px;
+  }
+  .pf-avatar-opt {
+    width: 44px; height: 44px; font-size: 22px;
+    display: grid; place-items: center;
+    background: #f4f8ff; border: 2px solid transparent; border-radius: 12px;
+    cursor: pointer; transition: all .12s ease;
+  }
+  .pf-avatar-opt:hover { transform: scale(1.08); background: #eef5ff; }
+  .pf-avatar-opt.on { border-color: #0b7efc; background: #e6f0ff; box-shadow: 0 0 0 3px rgba(11,126,252,.18); }
   .pf-user-btn {
     flex: none;
     font-family: var(--font); font-size: 12px; font-weight: 700;

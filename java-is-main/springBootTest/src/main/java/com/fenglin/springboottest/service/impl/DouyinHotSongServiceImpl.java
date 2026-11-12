@@ -1,7 +1,6 @@
 package com.fenglin.springboottest.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.fenglin.springboottest.common.SongIdResolver;
 import com.fenglin.springboottest.entity.DouyinHotSong;
 import com.fenglin.springboottest.mapper.DouyinHotSongMapper;
 import com.fenglin.springboottest.service.DouyinHotSongService;
@@ -19,16 +18,11 @@ public class DouyinHotSongServiceImpl implements DouyinHotSongService {
     @Autowired
     private DouyinHotSongMapper douyinHotSongMapper;
 
-    @Autowired
-    private SongIdResolver songIdResolver;
-
     @Override
     public List<DouyinHotSong> hotSongs() {
-        List<DouyinHotSong> list = douyinHotSongMapper.selectList(
+        // song_id 已为真实列，MyBatis-Plus 自动映射到 songId，无需再反查
+        return douyinHotSongMapper.selectList(
                 new LambdaQueryWrapper<DouyinHotSong>()
                         .orderByAsc(DouyinHotSong::getRankNo));
-        // 填充主曲库统一 songId，供收藏 / 播放记录引用
-        songIdResolver.fillSongIds(list, DouyinHotSong::getTitle, DouyinHotSong::getArtist, DouyinHotSong::setSongId);
-        return list;
     }
 }

@@ -57,7 +57,7 @@ public class NeteaseHotSong {
     @TableLogic
     private Integer deleted;
 
-    /** 关联主曲库 song 表的统一 id（非数据库列，Service 层按 title+artist 反查填充），收藏/播放用此 id */
-    @TableField(exist = false)
+    /** 关联主曲库 song 表的统一 id（真实列 song_id，收藏/播放用此 id） */
+    @TableField("song_id")
     private Long songId;
 }

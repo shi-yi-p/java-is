@@ -2,20 +2,66 @@
 /* ============================================================
  * 底部播放条（酷狗式）：显示当前歌曲 / 播放控制 / 进度条
  * ============================================================ */
-import { player, togglePlay, next, prev, seek, fmtTime } from '../player.js'
-import { ref, computed } from 'vue'
+import { player, togglePlay, next, prev, seek, fmtTime, cycleMode, isFavorite, toggleFavorite } from '../player.js'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 
 const barEl = ref(null)
+const dragging = ref(false)
 
 const percent = computed(() =>
   player.duration ? Math.min(100, (player.cur / player.duration) * 100) : 0
 )
 
+/* 播放模式文案与图标 */
+const modeLabel = computed(() => {
+  if (player.mode === 'one') return '🔂'
+  if (player.mode === 'order') return '🔁'   /* 顺序播放：播完即停 */
+  return '🔁'                                 /* list 列表循环 */
+})
+const modeText = computed(() => {
+  if (player.mode === 'one') return '单曲循环'
+  if (player.mode === 'order') return '顺序播放'
+  return '列表循环'
+})
+
+/* 当前歌曲是否已收藏 */
+const fav = computed(() => isFavorite(player.song))
+
+function toggleMode() {
+  cycleMode()
+  try { window.dispatchEvent(new CustomEvent('shark-toast', { detail: '播放模式：' + modeText.value })) } catch (e) {}
+}
+
+async function onFav() {
+  const msg = await toggleFavorite(player.song)
+  try { window.dispatchEvent(new CustomEvent('shark-toast', { detail: msg })) } catch (e) {}
+}
+
+/* 根据进度条位置计算秒数 */
+function ratioToSec(e, el) {
+  const rect = el.getBoundingClientRect()
+  const ratio = Math.min(1, Math.max(0, (e.clientX - rect.left) / rect.width))
+  return ratio * (player.duration || 0)
+}
+
 /* 点击进度条跳转 */
 function onSeek(e) {
-  const rect = e.currentTarget.getBoundingClientRect()
-  const ratio = Math.min(1, Math.max(0, (e.clientX - rect.left) / rect.width))
-  seek(ratio * (player.duration || 0))
+  seek(ratioToSec(e, e.currentTarget))
+}
+
+/* 拖拽进度条：按下后跟踪鼠标移动 */
+function onDown(e) {
+  const track = e.currentTarget
+  dragging.value = true
+  const move = (ev) => seek(ratioToSec(ev, track))
+  const up = () => {
+    dragging.value = false
+    window.removeEventListener('mousemove', move)
+    window.removeEventListener('mouseup', up)
+  }
+  window.addEventListener('mousemove', move)
+  window.addEventListener('mouseup', up)
+  seek(ratioToSec(e, track))
 }
 
 function closeBar() {
@@ -42,19 +88,23 @@ function closeBar() {
         {{ player.playing ? '⏸' : '▶' }}
       </button>
       <button class="pb-btn" type="button" title="下一首" @click="next">⏭</button>
+      <button class="pb-btn" type="button" :title="modeText" @click="toggleMode">{{ modeLabel }}</button>
     </div>
 
     <!-- 进度区 -->
     <div class="pb-progress">
       <span class="pb-time">{{ fmtTime(player.cur) }}</span>
-      <div class="pb-track" @click="onSeek">
-        <div class="pb-track-fill" :style="{ width: percent + '%' }"></div>
+      <div class="pb-track" :class="{ dragging }" @click="onSeek" @mousedown="onDown">
+        <div class="pb-track-fill" :style="{ width: percent + '%' }">
+          <span class="pb-thumb"></span>
+        </div>
       </div>
       <span class="pb-time">{{ fmtTime(player.duration) }}</span>
     </div>
 
-    <!-- 展开 / 收起 -->
+    <!-- 收藏 / 展开 / 收起 -->
     <div class="pb-extra">
+      <button class="pb-btn small" type="button" :title="fav ? '取消收藏' : '收藏'" :class="{ on: fav }" @click="onFav">{{ fav ? '❤️' : '🤍' }}</button>
       <button class="pb-btn small" type="button" title="展开正在播放" @click="player.open = true" v-if="!player.open">⤢</button>
       <button class="pb-btn small" type="button" title="收起" @click="closeBar" v-else>✕</button>
     </div>
@@ -125,16 +175,30 @@ function closeBar() {
     background: rgba(255, 255, 255, 0.16);
     border-radius: 999px;
     cursor: pointer;
+    position: relative;
+    transition: height 0.15s ease;
   }
-  .pb-track:hover { height: 7px; }
+  .pb-track:hover, .pb-track.dragging { height: 7px; }
   .pb-track-fill {
     height: 100%;
     background: linear-gradient(90deg, #4fa3ff, #0b7efc);
     border-radius: 999px;
-    transition: width 0.2s linear;
+    position: relative;
+    transition: width 0.15s linear;
   }
+  .pb-thumb {
+    position: absolute; right: -5px; top: 50%;
+    transform: translateY(-50%) scale(0);
+    width: 12px; height: 12px;
+    border-radius: 50%;
+    background: #fff;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.4);
+    transition: transform 0.15s ease;
+  }
+  .pb-track:hover .pb-thumb, .pb-track.dragging .pb-thumb { transform: translateY(-50%) scale(1); }
 
   .pb-extra { flex: none; display: flex; gap: 6px; }
+  .pb-extra .pb-btn.on { background: rgba(255, 154, 160, 0.25); }
 
   @media (max-width: 940px) {
     .pb-bar { gap: 12px; padding: 0 14px; }

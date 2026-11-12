@@ -60,6 +60,21 @@ CREATE TABLE IF NOT EXISTS `user_moment` (
   KEY `idx_user_time` (`user_id`, `create_time`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='用户动态表';
 
+-- 5) 个人歌单表 user_playlist
+--    每个用户自建、互不可见（按 user_id 隔离），区别于全站公用的精选歌单 playlist
+CREATE TABLE IF NOT EXISTS `user_playlist` (
+  `id`          BIGINT       NOT NULL AUTO_INCREMENT COMMENT '主键',
+  `user_id`     BIGINT       NOT NULL                COMMENT '所属用户 id',
+  `name`        VARCHAR(64)  NOT NULL                COMMENT '歌单名',
+  `cover_tone`  VARCHAR(16)  NOT NULL DEFAULT 'p1'   COMMENT '封面配色 p1~p8',
+  `sort_order`  INT          NOT NULL DEFAULT 0      COMMENT '排序(小在前)',
+  `create_time` DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_time` DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  `deleted`     TINYINT      NOT NULL DEFAULT 0      COMMENT '逻辑删除：0-未删 1-已删',
+  PRIMARY KEY (`id`),
+  KEY `idx_user` (`user_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='个人歌单表';
+
 -- ============================================================
 -- 执行方式（Windows，本地 MySQL root / 123456）：
 --   "C:\Program Files\MySQL\MySQL Server 8.0\bin\mysql.exe" -uroot -p123456 --default-character-set=utf8mb4 < sql/profile_social.sql

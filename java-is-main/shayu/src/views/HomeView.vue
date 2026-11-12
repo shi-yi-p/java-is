@@ -47,7 +47,7 @@ const helloName = computed(() => nickname.value || '鲨鲨乐迷')
 
 /* ============ 顶栏 / 导航 ============ */
 const topLinks = ['音乐人', '声播创作', 'VIP会员']
-const navItems = ['首页', '榜单', '听书', '直播', '论坛', '下载鲨鱼', '商务合作', '更多']
+const navItems = ['首页', '榜单', '听书', '直播', '听歌总榜', '论坛', '下载鲨鱼', '商务合作', '更多']
 
 /* ============ 子页面：首页 / 榜单 / 听书 / 直播（由 hash 驱动，支持浏览器前进后退）============ */
 const PAGE_ROUTES = ['rank', 'audiobook', 'live']
@@ -255,7 +255,8 @@ const trendMap = { up: '↑', down: '↓', flat: '—', new: '新' }
 function trendOf(t) { return trendMap[t] || '—' }
 
 /* ============ 曲库搜索：GET /api/search?keyword= ============ */
-const searchResults = ref([])     /* 搜索结果列表 */
+const searchResults = ref([])     /* 搜索结果列表（歌曲） */
+const searchUsers = ref([])       /* 搜索结果（用户） */
 const searchState = ref('')      /* '' | loading | done */
 const showPanel = ref(false)     /* 下拉面板开关 */
 
@@ -268,9 +269,15 @@ async function doSearch() {
   searchState.value = 'loading'
   showPanel.value = true
   try {
-    const res = await fetch(API + '/api/search?keyword=' + encodeURIComponent(kw))
-    const data = await res.json().catch(() => ({}))
-    searchResults.value = (res.ok && Array.isArray(data.data)) ? data.data : []
+    // 并行搜歌曲 + 用户
+    const [songRes, userRes] = await Promise.all([
+      fetch(API + '/api/search?keyword=' + encodeURIComponent(kw)),
+      fetch(API + '/api/search/user?keyword=' + encodeURIComponent(kw))
+    ])
+    const songData = await songRes.json().catch(() => ({}))
+    const userData = await userRes.json().catch(() => ({}))
+    searchResults.value = (songRes.ok && Array.isArray(songData.data)) ? songData.data : []
+    searchUsers.value = (userRes.ok && Array.isArray(userData.data)) ? userData.data : []
     searchState.value = 'done'
   } catch (e) {
     showPanel.value = false
@@ -282,6 +289,13 @@ async function doSearch() {
 function pickSong(s) {
   showPanel.value = false
   playSong(s, searchResults.value)
+}
+
+/* 点击用户搜索结果：提示（当前无他人主页页，后续可跳转） */
+function pickUser(u) {
+  showPanel.value = false
+  keyword.value = ''
+  toast('用户「' + (u.nickname || u.account) + '」 UID：' + u.uid + ' 🐟')
 }
 
 /* 标题关键词高亮：把文本切成 普通段/命中段（避免 v-html） */
@@ -402,6 +416,9 @@ function goNav(n) {
   if (n === '直播') return goPage('live')
   if (n === '首页') return goPage('home')
 
+  /* 听歌总榜：独立页面（听歌总排名榜） */
+  if (n === '听歌总榜') { location.hash = '#/ranking'; return }
+
   /* 论坛：独立页面 */
   if (n === '论坛') { location.hash = '#/forum'; return }
 
@@ -490,33 +507,50 @@ function goProfile() {
         <svg viewBox="0 0 24 24" fill="none" stroke="#8fbdf9" stroke-width="2.4" stroke-linecap="round">
           <circle cx="11" cy="11" r="6.5"/><path d="M16.2 16.2L21 21"/>
         </svg>
-        <input v-model="keyword" type="text" placeholder="搜索歌曲 / 歌手 / 专辑…" autocomplete="off" />
-        <!-- ===== 曲库搜索结果下拉面板 ===== -->
+        <input v-model="keyword" type="text" placeholder="搜索歌曲 / 歌手 / UID / 用户…" autocomplete="off" />
+        <!-- ===== 搜索结果下拉面板 ===== -->
         <div v-if="showPanel" class="kg-search-panel">
           <div class="kg-search-head">
-            <span v-if="searchState === 'loading'">正在曲库中搜索「{{ keyword.trim() }}」…</span>
-            <span v-else>共找到 {{ searchResults.length }} 首与「{{ keyword.trim() }}」相关的歌曲</span>
+            <span v-if="searchState === 'loading'">正在搜索「{{ keyword.trim() }}」…</span>
+            <span v-else>共找到 {{ searchResults.length }} 首歌曲、{{ searchUsers.length }} 个用户</span>
             <i class="kg-search-close" @click="showPanel = false">✕</i>
           </div>
 
-          <div v-if="searchState === 'done' && !searchResults.length" class="kg-search-empty">
-            没有找到相关歌曲，换个关键词试试 🐟
+          <div v-if="searchState === 'done' && !searchResults.length && !searchUsers.length" class="kg-search-empty">
+            没有找到相关内容，换个关键词试试 🐟
           </div>
 
-          <div
-            v-for="s in searchResults"
-            :key="s.id"
-            class="kg-search-item"
-            @click="pickSong(s)"
-          >
-            <span class="kg-search-title">
-              <template v-for="(g, gi) in segs(s.title, keyword)" :key="gi">
-                <b v-if="g.hl" class="kg-search-hl">{{ g.t }}</b>
-                <template v-else>{{ g.t }}</template>
-              </template>
-            </span>
-            <span class="kg-search-artist">{{ s.artist }} · {{ s.album }}</span>
-            <span class="kg-search-dur">{{ fmtTime(s.duration) }}</span>
+          <!-- 用户结果 -->
+          <div v-if="searchUsers.length" class="kg-search-group">
+            <div class="kg-search-group-title">用户</div>
+            <div v-for="u in searchUsers" :key="'u' + u.id" class="kg-search-user" @click="pickUser(u)">
+              <span class="kg-search-user-ava">{{ u.avatar || (u.nickname || u.account).slice(0, 1) }}</span>
+              <span class="kg-search-user-info">
+                <b>{{ u.nickname || u.account }}</b>
+                <em>UID：{{ u.uid }}</em>
+              </span>
+              <span class="kg-search-user-go">›</span>
+            </div>
+          </div>
+
+          <!-- 歌曲结果 -->
+          <div v-if="searchResults.length" class="kg-search-group">
+            <div class="kg-search-group-title">歌曲</div>
+            <div
+              v-for="s in searchResults"
+              :key="s.id"
+              class="kg-search-item"
+              @click="pickSong(s)"
+            >
+              <span class="kg-search-title">
+                <template v-for="(g, gi) in segs(s.title, keyword)" :key="gi">
+                  <b v-if="g.hl" class="kg-search-hl">{{ g.t }}</b>
+                  <template v-else>{{ g.t }}</template>
+                </template>
+              </span>
+              <span class="kg-search-artist">{{ s.artist }} · {{ s.album }}</span>
+              <span class="kg-search-dur">{{ fmtTime(s.duration) }}</span>
+            </div>
           </div>
         </div>
       </form>
@@ -996,6 +1030,34 @@ function goProfile() {
     font-size: 12px; color: #b3bcc9;
     font-variant-numeric: tabular-nums;
   }
+
+  /* ===== 搜索结果分组 + 用户结果 ===== */
+  .kg-search-group-title {
+    padding: 8px 14px 4px;
+    font-size: 11px; font-weight: 800; letter-spacing: 1px;
+    color: #b3bcc9; text-transform: uppercase;
+  }
+  .kg-search-group-title:not(:first-child) { border-top: 1px solid #f0f4fa; margin-top: 4px; }
+  .kg-search-user {
+    display: flex; align-items: center; gap: 12px;
+    padding: 10px 14px; cursor: pointer;
+  }
+  .kg-search-user:hover { background: #f4f9ff; }
+  .kg-search-user-ava {
+    flex: none; width: 38px; height: 38px; border-radius: 50%;
+    background: linear-gradient(150deg, #0b7efc, #0a6ce0);
+    display: grid; place-items: center;
+    font-size: 16px; font-weight: 800; color: #fff;
+  }
+  .kg-search-user-info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+  .kg-search-user-info b {
+    font-size: 13.5px; font-weight: 700; color: #2f3238;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .kg-search-user-info em {
+    font-style: normal; font-size: 11px; color: #9aa5b5; font-variant-numeric: tabular-nums;
+  }
+  .kg-search-user-go { flex: none; font-size: 18px; color: #c3ccd8; }
 
   .kg-toplinks { display: flex; gap: 22px; margin-left: auto; }
   .kg-toplinks a {

@@ -12,10 +12,31 @@ const percent = computed(() =>
   player.duration ? Math.min(100, (player.cur / player.duration) * 100) : 0
 )
 
-function onSeek(e) {
-  const rect = e.currentTarget.getBoundingClientRect()
+const dragging = ref(false)
+
+function ratioToSec(e, el) {
+  const rect = el.getBoundingClientRect()
   const ratio = Math.min(1, Math.max(0, (e.clientX - rect.left) / rect.width))
-  seek(ratio * (player.duration || 0))
+  return ratio * (player.duration || 0)
+}
+
+function onSeek(e) {
+  seek(ratioToSec(e, e.currentTarget))
+}
+
+/* 拖拽进度条 */
+function onDown(e) {
+  const track = e.currentTarget
+  dragging.value = true
+  const move = (ev) => seek(ratioToSec(ev, track))
+  const up = () => {
+    dragging.value = false
+    window.removeEventListener('mousemove', move)
+    window.removeEventListener('mouseup', up)
+  }
+  window.addEventListener('mousemove', move)
+  window.addEventListener('mouseup', up)
+  seek(ratioToSec(e, track))
 }
 
 function toast(msg) {
@@ -180,8 +201,10 @@ const waveBars = computed(() => {
       <!-- 进度条 -->
       <div class="np-progress">
         <span class="np-time">{{ fmtTime(player.cur) }}</span>
-        <div class="np-track" @click="onSeek">
-          <div class="np-track-fill" :style="{ width: percent + '%' }"></div>
+        <div class="np-track" :class="{ dragging }" @click="onSeek" @mousedown="onDown">
+          <div class="np-track-fill" :style="{ width: percent + '%' }">
+            <span class="np-thumb"></span>
+          </div>
         </div>
         <span class="np-time">{{ fmtTime(player.duration) }}</span>
       </div>
@@ -379,12 +402,25 @@ const waveBars = computed(() => {
     background: rgba(255,255,255,0.16);
     border-radius: 999px; cursor: pointer;
   }
-  .np-track:hover { height: 7px; }
+  .np-track { position: relative; transition: height 0.15s ease; }
+  .np-track:hover, .np-track.dragging { height: 7px; }
   .np-track-fill {
     height: 100%;
     background: linear-gradient(90deg, #4fa3ff, #67e8f9);
     border-radius: 999px;
+    position: relative;
+    transition: width 0.15s linear;
   }
+  .np-thumb {
+    position: absolute; right: -5px; top: 50%;
+    transform: translateY(-50%) scale(0);
+    width: 12px; height: 12px;
+    border-radius: 50%;
+    background: #fff;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.4);
+    transition: transform 0.15s ease;
+  }
+  .np-track:hover .np-thumb, .np-track.dragging .np-thumb { transform: translateY(-50%) scale(1); }
 
   .np-ctrl {
     display: flex; align-items: center; justify-content: center;

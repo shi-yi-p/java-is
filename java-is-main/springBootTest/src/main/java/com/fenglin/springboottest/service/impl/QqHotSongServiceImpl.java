@@ -1,7 +1,6 @@
 package com.fenglin.springboottest.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.fenglin.springboottest.common.SongIdResolver;
 import com.fenglin.springboottest.entity.QqHotSong;
 import com.fenglin.springboottest.mapper.QqHotSongMapper;
 import com.fenglin.springboottest.service.QqHotSongService;
@@ -19,15 +18,11 @@ public class QqHotSongServiceImpl implements QqHotSongService {
     @Autowired
     private QqHotSongMapper qqHotSongMapper;
 
-    @Autowired
-    private SongIdResolver songIdResolver;
-
     @Override
     public List<QqHotSong> hotSongs() {
-        List<QqHotSong> list = qqHotSongMapper.selectList(
+        // song_id 已为真实列，MyBatis-Plus 自动映射到 songId，无需再反查
+        return qqHotSongMapper.selectList(
                 new LambdaQueryWrapper<QqHotSong>()
                         .orderByAsc(QqHotSong::getRankNo));
-        songIdResolver.fillSongIds(list, QqHotSong::getTitle, QqHotSong::getArtist, QqHotSong::setSongId);
-        return list;
     }
 }

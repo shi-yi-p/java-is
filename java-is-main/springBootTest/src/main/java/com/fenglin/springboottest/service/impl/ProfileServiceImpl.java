@@ -5,6 +5,8 @@ import com.fenglin.springboottest.common.SharkLevel;
 import com.fenglin.springboottest.dto.MomentVO;
 import com.fenglin.springboottest.dto.ProfileVO;
 import com.fenglin.springboottest.dto.RankUserVO;
+import com.fenglin.springboottest.dto.SongListenStat;
+import com.fenglin.springboottest.dto.UserProfileVO;
 import com.fenglin.springboottest.entity.PlayHistory;
 import com.fenglin.springboottest.entity.Playlist;
 import com.fenglin.springboottest.entity.Song;
@@ -67,6 +69,8 @@ public class ProfileServiceImpl implements ProfileService {
         vo.setId(user.getId());
         vo.setAccount(user.getAccount());
         vo.setNickname(user.getNickname() != null ? user.getNickname() : user.getAccount());
+        vo.setAvatar(user.getAvatar());
+        vo.setUid(user.getUid());
 
         vo.setFollowing(followMapper.selectCount(Wrappers.<UserFollow>lambdaQuery()
                 .eq(UserFollow::getFollowerId, userId)));
@@ -87,6 +91,7 @@ public class ProfileServiceImpl implements ProfileService {
         vo.setLevel(level);
         vo.setLevelName(SharkLevel.nameOf(level));
         vo.setNextLevelSeconds(SharkLevel.nextLevelSeconds(listenSeconds));
+        vo.setProgress(SharkLevel.progressOf(listenSeconds));
         return vo;
     }
 
@@ -160,6 +165,60 @@ public class ProfileServiceImpl implements ProfileService {
         }
         List<Long> ids = follows.stream().map(UserFollow::getFollowerId).collect(Collectors.toList());
         return userMapper.selectBatchIds(ids);
+    }
+
+    @Override
+    public List<User> friends(Long userId) {
+        // 好友 = 互相关注：我关注的人里，对方也关注了我
+        List<UserFollow> iFollow = followMapper.selectList(Wrappers.<UserFollow>lambdaQuery()
+                .eq(UserFollow::getFollowerId, userId));
+        if (iFollow.isEmpty()) {
+            return new ArrayList<>();
+        }
+        List<Long> iFollowIds = iFollow.stream().map(UserFollow::getFolloweeId).collect(Collectors.toList());
+        // 这些人里，谁回关了我（follower_id 是对方，followee_id 是我）
+        List<UserFollow> backFollow = followMapper.selectList(Wrappers.<UserFollow>lambdaQuery()
+                .in(UserFollow::getFollowerId, iFollowIds)
+                .eq(UserFollow::getFolloweeId, userId));
+        if (backFollow.isEmpty()) {
+            return new ArrayList<>();
+        }
+        List<Long> friendIds = backFollow.stream().map(UserFollow::getFollowerId).collect(Collectors.toList());
+        return userMapper.selectBatchIds(friendIds);
+    }
+
+    @Override
+    public List<SongListenStat> songListenStats(Long userId) {
+        List<SongListenStat> stats = historyMapper.songListenStats(userId);
+        return stats != null ? stats : new ArrayList<>();
+    }
+
+    @Override
+    public User updateAvatar(Long userId, String avatar) {
+        if (avatar == null || avatar.isBlank()) {
+            return null;
+        }
+        User user = userMapper.selectById(userId);
+        if (user == null) {
+            return null;
+        }
+        user.setAvatar(avatar.trim());
+        userMapper.updateById(user);
+        return user;
+    }
+
+    @Override
+    public User updateNickname(Long userId, String nickname) {
+        if (nickname == null || nickname.isBlank()) {
+            return null;
+        }
+        User user = userMapper.selectById(userId);
+        if (user == null) {
+            return null;
+        }
+        user.setNickname(nickname.trim());
+        userMapper.updateById(user);
+        return user;
     }
 
     @Override
@@ -407,5 +466,50 @@ public class ProfileServiceImpl implements ProfileService {
         }
         userPlaylistMapper.deleteById(playlistId);
         return true;
+    }
+
+    @Override
+    public UserProfileVO visitProfile(Long viewerId, Long targetId) {
+        User user = userMapper.selectById(targetId);
+        if (user == null) {
+            return null;
+        }
+        UserProfileVO vo = new UserProfileVO();
+        vo.setId(user.getId());
+        vo.setAccount(user.getAccount());
+        vo.setNickname(user.getNickname() != null ? user.getNickname() : user.getAccount());
+        vo.setAvatar(user.getAvatar());
+        vo.setUid(user.getUid());
+
+        vo.setFollowing(followMapper.selectCount(Wrappers.<UserFollow>lambdaQuery()
+                .eq(UserFollow::getFollowerId, targetId)));
+        vo.setFollowers(followMapper.selectCount(Wrappers.<UserFollow>lambdaQuery()
+                .eq(UserFollow::getFolloweeId, targetId)));
+        vo.setFavoriteCount(favoriteMapper.selectCount(Wrappers.<UserFavorite>lambdaQuery()
+                .eq(UserFavorite::getUserId, targetId)));
+        vo.setPlayCount(historyMapper.selectCount(Wrappers.<PlayHistory>lambdaQuery()
+                .eq(PlayHistory::getUserId, targetId)));
+
+        long sec = sumListenSeconds(targetId);
+        vo.setListenSeconds(sec);
+        int level = SharkLevel.levelOf(sec);
+        vo.setLevel(level);
+        vo.setLevelName(SharkLevel.nameOf(level));
+        vo.setNextLevelSeconds(SharkLevel.nextLevelSeconds(sec));
+        vo.setProgress(SharkLevel.progressOf(sec));
+
+        // 浏览者是否关注了对方
+        long f = followMapper.selectCount(Wrappers.<UserFollow>lambdaQuery()
+                .eq(UserFollow::getFollowerId, viewerId)
+                .eq(UserFollow::getFolloweeId, targetId));
+        vo.setFollowed(f > 0);
+
+        // 对方是否也关注了浏览者（互相关注 = 好友）
+        long back = followMapper.selectCount(Wrappers.<UserFollow>lambdaQuery()
+                .eq(UserFollow::getFollowerId, targetId)
+                .eq(UserFollow::getFolloweeId, viewerId));
+        vo.setMutualFollow(back > 0);
+
+        return vo;
     }
 }
