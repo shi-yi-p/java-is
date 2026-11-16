@@ -11,7 +11,7 @@
  Target Server Version : 80039 (8.0.39)
  File Encoding         : 65001
 
- Date: 12/11/2026 15:15:53
+ Date: 16/11/2026 09:54:59
 */
 
 SET NAMES utf8mb4;
@@ -263,11 +263,12 @@ CREATE TABLE `forum_post`  (
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_post_user`(`user_id` ASC) USING BTREE,
   INDEX `idx_post_time`(`create_time` ASC) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 4 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '论坛帖子' ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB AUTO_INCREMENT = 5 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '论坛帖子' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of forum_post
 -- ----------------------------
+INSERT INTO `forum_post` VALUES (4, 1, '宿敌', '这首歌真好听', 'music', 2, 0, 2, '2026-11-16 09:08:07', 0);
 
 -- ----------------------------
 -- Table structure for kugou_hot_song
@@ -325,6 +326,43 @@ INSERT INTO `kugou_hot_song` VALUES (27, 27, '不将就', '李荣浩', '有理�
 INSERT INTO `kugou_hot_song` VALUES (28, 28, '年少有为', '李荣浩', '年少有为', 276, 37000000, 'flat', NULL, '2026-11-05 14:40:59', '2026-11-12 14:07:39', 0, 118);
 INSERT INTO `kugou_hot_song` VALUES (29, 29, '体面', '于文文', '体面', 265, 35000000, 'new', NULL, '2026-11-05 14:40:59', '2026-11-12 14:07:39', 0, 82);
 INSERT INTO `kugou_hot_song` VALUES (30, 30, '往后余生', '马良', '往后余生', 249, 33000000, 'flat', NULL, '2026-11-05 14:40:59', '2026-11-12 14:07:39', 0, 45);
+
+-- ----------------------------
+-- Table structure for login_history
+-- ----------------------------
+DROP TABLE IF EXISTS `login_history`;
+CREATE TABLE `login_history`  (
+  `id` bigint NOT NULL AUTO_INCREMENT COMMENT '主键',
+  `user_id` bigint NOT NULL COMMENT '用户 id（关联 user.id）',
+  `account` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '账户（手机号/邮箱/用户名）',
+  `nickname` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '登录时昵称快照',
+  `ip` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '登录来源 IP',
+  `login_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '登录时间',
+  `deleted` tinyint NOT NULL DEFAULT 0 COMMENT '逻辑删除：0-未删 1-已删',
+  PRIMARY KEY (`id`) USING BTREE,
+  INDEX `idx_user_id`(`user_id` ASC) USING BTREE,
+  INDEX `idx_login_time`(`login_time` ASC) USING BTREE
+) ENGINE = InnoDB AUTO_INCREMENT = 17 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '登录历史表' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
+-- Records of login_history
+-- ----------------------------
+INSERT INTO `login_history` VALUES (1, 4, '111', '111', '127.0.0.1', '2026-11-16 08:59:11', 0);
+INSERT INTO `login_history` VALUES (2, 1, '123', '十一', '127.0.0.1', '2026-11-16 09:02:54', 0);
+INSERT INTO `login_history` VALUES (3, 1, '123', '十一', '127.0.0.1', '2026-11-16 09:14:11', 0);
+INSERT INTO `login_history` VALUES (4, 1, '123', '十一', '127.0.0.1', '2026-11-16 09:14:23', 0);
+INSERT INTO `login_history` VALUES (5, 4, '111', '111', '127.0.0.1', '2026-11-16 09:14:34', 0);
+INSERT INTO `login_history` VALUES (6, 1, '123', '十一', '127.0.0.1', '2026-11-16 09:15:16', 0);
+INSERT INTO `login_history` VALUES (7, 1, '123', '十一', '127.0.0.1', '2026-11-16 09:16:07', 0);
+INSERT INTO `login_history` VALUES (8, 1, '123', '十一', '127.0.0.1', '2026-11-16 09:18:25', 0);
+INSERT INTO `login_history` VALUES (9, 1, '123', '十一', '127.0.0.1', '2026-11-16 09:19:02', 0);
+INSERT INTO `login_history` VALUES (10, 1, '123', '十一', '127.0.0.1', '2026-11-16 09:19:37', 0);
+INSERT INTO `login_history` VALUES (11, 1, '123', '十一', '127.0.0.1', '2026-11-16 09:20:01', 0);
+INSERT INTO `login_history` VALUES (12, 4, '111', '111', '127.0.0.1', '2026-11-16 09:20:25', 0);
+INSERT INTO `login_history` VALUES (13, 1, '123', '十一', '127.0.0.1', '2026-11-16 09:24:58', 0);
+INSERT INTO `login_history` VALUES (14, 1, '123', '十一', '127.0.0.1', '2026-11-16 09:25:44', 0);
+INSERT INTO `login_history` VALUES (15, 4, '111', '111', '127.0.0.1', '2026-11-16 09:43:50', 0);
+INSERT INTO `login_history` VALUES (16, 14, 'GAY', 'GAY', '127.0.0.1', '2026-11-16 09:49:16', 0);
 
 -- ----------------------------
 -- Table structure for netease_hot_song
@@ -397,7 +435,7 @@ CREATE TABLE `play_history`  (
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_user_time`(`user_id` ASC, `played_at` ASC) USING BTREE,
   INDEX `idx_song`(`song_id` ASC) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 22 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '用户播放历史表' ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB AUTO_INCREMENT = 52 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '用户播放历史表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of play_history
@@ -415,6 +453,36 @@ INSERT INTO `play_history` VALUES (18, 1, 95, 239, '2026-11-12 14:45:52', 0);
 INSERT INTO `play_history` VALUES (19, 1, 96, 267, '2026-11-12 14:49:52', 0);
 INSERT INTO `play_history` VALUES (20, 1, 64, 261, '2026-11-12 14:54:21', 0);
 INSERT INTO `play_history` VALUES (21, 1, 97, 246, '2026-11-12 14:58:43', 0);
+INSERT INTO `play_history` VALUES (22, 4, 64, 261, '2026-11-16 08:59:22', 0);
+INSERT INTO `play_history` VALUES (23, 4, 126, 224, '2026-11-16 08:59:30', 0);
+INSERT INTO `play_history` VALUES (24, 4, 63, 320, '2026-11-16 08:59:37', 0);
+INSERT INTO `play_history` VALUES (25, 1, 100, 278, '2026-11-16 09:03:03', 0);
+INSERT INTO `play_history` VALUES (26, 1, 66, 264, '2026-11-16 09:03:17', 0);
+INSERT INTO `play_history` VALUES (27, 1, 101, 269, '2026-11-16 09:07:42', 0);
+INSERT INTO `play_history` VALUES (28, 1, 67, 276, '2026-11-16 09:07:42', 0);
+INSERT INTO `play_history` VALUES (29, 1, 102, 271, '2026-11-16 09:12:12', 0);
+INSERT INTO `play_history` VALUES (30, 1, 68, 260, '2026-11-16 09:12:20', 0);
+INSERT INTO `play_history` VALUES (31, 1, 69, 260, '2026-11-16 09:16:41', 0);
+INSERT INTO `play_history` VALUES (32, 1, 103, 235, '2026-11-16 09:16:45', 0);
+INSERT INTO `play_history` VALUES (33, 4, 66, 264, '2026-11-16 09:20:39', 0);
+INSERT INTO `play_history` VALUES (34, 1, 66, 264, '2026-11-16 09:20:45', 0);
+INSERT INTO `play_history` VALUES (35, 1, 66, 264, '2026-11-16 09:24:02', 0);
+INSERT INTO `play_history` VALUES (36, 1, 67, 276, '2026-11-16 09:25:09', 0);
+INSERT INTO `play_history` VALUES (37, 1, 100005, 0, '2026-11-16 09:28:26', 0);
+INSERT INTO `play_history` VALUES (38, 1, 68, 260, '2026-11-16 09:29:45', 0);
+INSERT INTO `play_history` VALUES (39, 1, 66, 264, '2026-11-16 09:29:46', 0);
+INSERT INTO `play_history` VALUES (40, 1, 66, 264, '2026-11-16 09:29:46', 0);
+INSERT INTO `play_history` VALUES (41, 1, 66, 264, '2026-11-16 09:29:48', 0);
+INSERT INTO `play_history` VALUES (42, 1, 66, 264, '2026-11-16 09:29:48', 0);
+INSERT INTO `play_history` VALUES (43, 1, 69, 260, '2026-11-16 09:34:05', 0);
+INSERT INTO `play_history` VALUES (44, 1, 68, 260, '2026-11-16 09:34:12', 0);
+INSERT INTO `play_history` VALUES (45, 1, 70, 273, '2026-11-16 09:38:25', 0);
+INSERT INTO `play_history` VALUES (46, 1, 67, 276, '2026-11-16 09:38:33', 0);
+INSERT INTO `play_history` VALUES (47, 1, 71, 225, '2026-11-16 09:42:58', 0);
+INSERT INTO `play_history` VALUES (48, 1, 103, 235, '2026-11-16 09:43:09', 0);
+INSERT INTO `play_history` VALUES (49, 1, 72, 271, '2026-11-16 09:46:45', 0);
+INSERT INTO `play_history` VALUES (50, 1, 69, 260, '2026-11-16 09:47:04', 0);
+INSERT INTO `play_history` VALUES (51, 14, 124, 215, '2026-11-16 09:49:24', 0);
 
 -- ----------------------------
 -- Table structure for playlist
@@ -717,13 +785,14 @@ CREATE TABLE `user`  (
   `deleted` tinyint NOT NULL DEFAULT 0 COMMENT '逻辑删除：0-未删 1-已删',
   PRIMARY KEY (`id`) USING BTREE,
   UNIQUE INDEX `uk_account`(`account` ASC) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 14 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '用户表' ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB AUTO_INCREMENT = 15 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '用户表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of user
 -- ----------------------------
 INSERT INTO `user` VALUES (1, '123', '$2a$10$8l6XelQnMQTA9imAdbu6vuue4h7kyQNiUWBzx1nS/G/KXTLHqrgTe', '十一', '🐟', '2026-11-05 14:04:12', '2026-11-05 14:04:12', 0);
 INSERT INTO `user` VALUES (4, '111', '$2a$10$D9Qx/qGr2u.xYIz5QJ2/COZ8bZJZcoOFGavgQpvAsIQ2BN/2MSs7K', '111', NULL, '2026-11-12 14:05:16', '2026-11-12 14:05:16', 0);
+INSERT INTO `user` VALUES (14, 'GAY', '$2a$10$zZSAnh6u5goZYFCVdh5W.Oiz4I3zhX93QibwFDhRkWZBBEKUeyz.q', 'GAY', NULL, '2026-11-16 09:49:16', '2026-11-16 09:49:16', 0);
 
 -- ----------------------------
 -- Table structure for user_favorite
@@ -737,13 +806,13 @@ CREATE TABLE `user_favorite`  (
   `deleted` tinyint NOT NULL DEFAULT 0 COMMENT '逻辑删除：0-未删 1-已删',
   PRIMARY KEY (`id`) USING BTREE,
   UNIQUE INDEX `uk_fav`(`user_id` ASC, `song_id` ASC) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 16 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '用户收藏歌曲表' ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB AUTO_INCREMENT = 18 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '用户收藏歌曲表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of user_favorite
 -- ----------------------------
-INSERT INTO `user_favorite` VALUES (1, 1, 1, '2026-11-06 14:32:04', 0);
-INSERT INTO `user_favorite` VALUES (2, 1, 2, '2026-11-06 14:32:04', 0);
+INSERT INTO `user_favorite` VALUES (1, 1, 1, '2026-11-06 14:32:04', 1);
+INSERT INTO `user_favorite` VALUES (2, 1, 2, '2026-11-06 14:32:04', 1);
 INSERT INTO `user_favorite` VALUES (3, 1, 11, '2026-11-12 14:03:39', 1);
 INSERT INTO `user_favorite` VALUES (5, 1, 3, '2026-11-12 14:04:16', 1);
 INSERT INTO `user_favorite` VALUES (9, 4, 31, '2026-11-12 14:15:58', 0);
@@ -753,6 +822,8 @@ INSERT INTO `user_favorite` VALUES (12, 1, 129, '2026-11-12 14:16:12', 1);
 INSERT INTO `user_favorite` VALUES (13, 1, 95, '2026-11-12 14:16:24', 0);
 INSERT INTO `user_favorite` VALUES (14, 1, 93, '2026-11-12 14:16:25', 0);
 INSERT INTO `user_favorite` VALUES (15, 1, 94, '2026-11-12 14:16:27', 0);
+INSERT INTO `user_favorite` VALUES (16, 1, 66, '2026-11-16 09:07:23', 0);
+INSERT INTO `user_favorite` VALUES (17, 14, 124, '2026-11-16 09:49:27', 0);
 
 -- ----------------------------
 -- Table structure for user_follow
@@ -766,12 +837,13 @@ CREATE TABLE `user_follow`  (
   `deleted` tinyint NOT NULL DEFAULT 0 COMMENT '逻辑删除：0-未删 1-已删',
   PRIMARY KEY (`id`) USING BTREE,
   UNIQUE INDEX `uk_follow`(`follower_id` ASC, `followee_id` ASC) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 8 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '用户关注关系表' ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB AUTO_INCREMENT = 9 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '用户关注关系表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of user_follow
 -- ----------------------------
 INSERT INTO `user_follow` VALUES (7, 1, 4, '2026-11-12 15:01:48', 0);
+INSERT INTO `user_follow` VALUES (8, 4, 1, '2026-11-16 08:59:50', 0);
 
 -- ----------------------------
 -- Table structure for user_moment
@@ -788,7 +860,7 @@ CREATE TABLE `user_moment`  (
   `deleted` tinyint NOT NULL DEFAULT 0 COMMENT '逻辑删除：0-未删 1-已删',
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_user_time`(`user_id` ASC, `create_time` ASC) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 40 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '用户动态表' ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB AUTO_INCREMENT = 73 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '用户动态表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of user_moment
@@ -818,6 +890,39 @@ INSERT INTO `user_moment` VALUES (36, 1, 'listen', '正在听「江南」', 96, 
 INSERT INTO `user_moment` VALUES (37, 1, 'listen', '正在听「演员」', 64, NULL, '2026-11-12 14:54:20', 0);
 INSERT INTO `user_moment` VALUES (38, 1, 'listen', '正在听「十年」', 97, NULL, '2026-11-12 14:58:42', 0);
 INSERT INTO `user_moment` VALUES (39, 1, 'follow', '关注了 111', NULL, NULL, '2026-11-12 15:01:48', 0);
+INSERT INTO `user_moment` VALUES (40, 4, 'listen', '正在听「演员」', 64, NULL, '2026-11-16 08:59:21', 0);
+INSERT INTO `user_moment` VALUES (41, 4, 'listen', '正在听「小美满」', 126, NULL, '2026-11-16 08:59:30', 0);
+INSERT INTO `user_moment` VALUES (42, 4, 'listen', '正在听「我不难过」', 63, NULL, '2026-11-16 08:59:36', 0);
+INSERT INTO `user_moment` VALUES (43, 4, 'follow', '关注了 十一', NULL, NULL, '2026-11-16 08:59:50', 0);
+INSERT INTO `user_moment` VALUES (44, 1, 'listen', '正在听「吻别」', 100, NULL, '2026-11-16 09:03:03', 0);
+INSERT INTO `user_moment` VALUES (45, 1, 'listen', '正在听「天龙八部之宿敌」', 66, NULL, '2026-11-16 09:03:17', 0);
+INSERT INTO `user_moment` VALUES (46, 1, 'favorite', '收藏了歌曲「天龙八部之宿敌」', 66, NULL, '2026-11-16 09:07:23', 0);
+INSERT INTO `user_moment` VALUES (47, 1, 'listen', '正在听「一千个伤心的理由」', 101, NULL, '2026-11-16 09:07:42', 0);
+INSERT INTO `user_moment` VALUES (48, 1, 'listen', '正在听「季候风」', 67, NULL, '2026-11-16 09:07:42', 0);
+INSERT INTO `user_moment` VALUES (49, 1, 'listen', '正在听「泡沫」', 102, NULL, '2026-11-16 09:12:12', 0);
+INSERT INTO `user_moment` VALUES (50, 1, 'listen', '正在听「雨爱」', 68, NULL, '2026-11-16 09:12:19', 0);
+INSERT INTO `user_moment` VALUES (51, 1, 'listen', '正在听「情歌」', 69, NULL, '2026-11-16 09:16:40', 0);
+INSERT INTO `user_moment` VALUES (52, 1, 'listen', '正在听「光年之外」', 103, NULL, '2026-11-16 09:16:44', 0);
+INSERT INTO `user_moment` VALUES (53, 4, 'listen', '正在听「天龙八部之宿敌」', 66, NULL, '2026-11-16 09:20:38', 0);
+INSERT INTO `user_moment` VALUES (54, 1, 'listen', '正在听「天龙八部之宿敌」', 66, NULL, '2026-11-16 09:20:44', 0);
+INSERT INTO `user_moment` VALUES (55, 1, 'listen', '正在听「天龙八部之宿敌」', 66, NULL, '2026-11-16 09:24:01', 0);
+INSERT INTO `user_moment` VALUES (56, 1, 'listen', '正在听「季候风」', 67, NULL, '2026-11-16 09:25:09', 0);
+INSERT INTO `user_moment` VALUES (57, 1, 'listen', '正在听「」', 100005, NULL, '2026-11-16 09:28:26', 0);
+INSERT INTO `user_moment` VALUES (58, 1, 'listen', '正在听「雨爱」', 68, NULL, '2026-11-16 09:29:45', 0);
+INSERT INTO `user_moment` VALUES (59, 1, 'listen', '正在听「天龙八部之宿敌」', 66, NULL, '2026-11-16 09:29:46', 0);
+INSERT INTO `user_moment` VALUES (60, 1, 'listen', '正在听「天龙八部之宿敌」', 66, NULL, '2026-11-16 09:29:46', 0);
+INSERT INTO `user_moment` VALUES (61, 1, 'listen', '正在听「天龙八部之宿敌」', 66, NULL, '2026-11-16 09:29:48', 0);
+INSERT INTO `user_moment` VALUES (62, 1, 'listen', '正在听「天龙八部之宿敌」', 66, NULL, '2026-11-16 09:29:48', 0);
+INSERT INTO `user_moment` VALUES (63, 1, 'listen', '正在听「情歌」', 69, NULL, '2026-11-16 09:34:05', 0);
+INSERT INTO `user_moment` VALUES (64, 1, 'listen', '正在听「雨爱」', 68, NULL, '2026-11-16 09:34:12', 0);
+INSERT INTO `user_moment` VALUES (65, 1, 'listen', '正在听「幻听」', 70, NULL, '2026-11-16 09:38:25', 0);
+INSERT INTO `user_moment` VALUES (66, 1, 'listen', '正在听「季候风」', 67, NULL, '2026-11-16 09:38:32', 0);
+INSERT INTO `user_moment` VALUES (67, 1, 'listen', '正在听「Always Online」', 71, NULL, '2026-11-16 09:42:58', 0);
+INSERT INTO `user_moment` VALUES (68, 1, 'listen', '正在听「光年之外」', 103, NULL, '2026-11-16 09:43:08', 0);
+INSERT INTO `user_moment` VALUES (69, 1, 'listen', '正在听「开始懂了」', 72, NULL, '2026-11-16 09:46:44', 0);
+INSERT INTO `user_moment` VALUES (70, 1, 'listen', '正在听「情歌」', 69, NULL, '2026-11-16 09:47:03', 0);
+INSERT INTO `user_moment` VALUES (71, 14, 'listen', '正在听「晚风告白」', 124, NULL, '2026-11-16 09:49:24', 0);
+INSERT INTO `user_moment` VALUES (72, 14, 'favorite', '收藏了歌曲「晚风告白」', 124, NULL, '2026-11-16 09:49:27', 0);
 
 -- ----------------------------
 -- Table structure for user_playlist
@@ -834,7 +939,7 @@ CREATE TABLE `user_playlist`  (
   `deleted` tinyint NOT NULL DEFAULT 0 COMMENT '逻辑删除：0-未删 1-已删',
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_user`(`user_id` ASC) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 2 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '个人歌单表' ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 2 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '个人歌单表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of user_playlist
