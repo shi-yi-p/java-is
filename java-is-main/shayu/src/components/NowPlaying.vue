@@ -3,7 +3,7 @@
  * 正在播放（酷狗式全屏详情页）
  * 由 HomeView 的 <NowPlaying v-if="player.open" /> 渲染
  * ============================================================ */
-import { player, togglePlay, next, prev, seek, fmtTime, playTrack, cycleMode, isFavorite, toggleFavorite } from '../player.js'
+import { player, togglePlay, next, prev, seek, fmtTime, playTrack, cycleMode, isFavorite, toggleFavorite, songIdOf } from '../player.js'
 import { ref, computed, watch, nextTick } from 'vue'
 
 const lyricMode = ref(true)
@@ -79,7 +79,7 @@ const LYRICS_POOL = [
   '愿你被这世界，温柔以待'
 ]
 
-/* 根据歌曲 id 生成确定性的歌词行（同一首歌每次一致） */
+/* 根据歌曲 id 生成确定性的歌词行（同一首歌每次一致）——仅作无真歌词时的兜底 */
 const lyrics = computed(() => {
   const s = player.song
   if (!s) return []
@@ -95,13 +95,40 @@ const lyrics = computed(() => {
   return lines
 })
 
+/* ================= 真实歌词：优先走后端 /api/lyric，命中则覆盖兜底歌词 ================= */
+const realLyrics = ref([])
+let lyricReqSeq = 0
+async function fetchLyrics() {
+  const s = player.song
+  const sid = songIdOf(s)
+  if (!sid) { realLyrics.value = []; return }
+  const seq = ++lyricReqSeq
+  realLyrics.value = []
+  try {
+    const res = await fetch('/api/lyric?id=' + encodeURIComponent(sid))
+    const d = await res.json().catch(() => ({}))
+    const lines = (res.ok && Array.isArray(d.data?.lines)) ? d.data.lines : []
+    // 仅当仍是当前歌曲（未被快速切歌覆盖）时写入
+    if (seq === lyricReqSeq) realLyrics.value = lines
+  } catch (e) {
+    if (seq === lyricReqSeq) realLyrics.value = []
+  }
+}
+
+/* 最终展示的歌词：真歌词优先，兜底演示歌词次之 */
+const displayLyrics = computed(() => realLyrics.value.length ? realLyrics.value : lyrics.value)
+
+/* 切歌时重新拉取真歌词 */
+watch(() => songIdOf(player.song), () => fetchLyrics(), { immediate: true })
+
 /* 当前高亮歌词下标 */
 const curLyricIdx = computed(() => {
-  if (!lyrics.value.length) return -1
+  const ls = displayLyrics.value
+  if (!ls.length) return -1
   const cur = player.cur || 0
   let idx = -1
-  for (let i = 0; i < lyrics.value.length; i++) {
-    if (cur >= lyrics.value[i].t) idx = i
+  for (let i = 0; i < ls.length; i++) {
+    if (cur >= ls[i].t) idx = i
   }
   return idx
 })
@@ -176,10 +203,10 @@ const waveBars = computed(() => {
       </div>
 
       <!-- 歌词滚动 -->
-      <div v-if="lyricMode && lyrics.length" class="np-lyric">
+      <div v-if="lyricMode && displayLyrics.length" class="np-lyric">
         <div class="np-lyric-scroll" ref="lyricScrollEl">
           <p
-            v-for="(l, i) in lyrics"
+            v-for="(l, i) in displayLyrics"
             :key="i"
             class="np-lyric-line"
             :class="{ on: i === curLyricIdx }"

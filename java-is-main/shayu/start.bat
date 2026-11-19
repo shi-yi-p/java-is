@@ -37,6 +37,42 @@ echo   后端 springBootTest = !BACKEND!
 echo.
 
 REM ============================================
+REM 自动获取本机局域网 IPv4（用于局域网访问）
+REM 优先取 192.168.x / 10.x / 172.16-31.x 网段；取不到则回退 localhost
+REM ============================================
+set "LAN_IP="
+set "IP_192="
+set "IP_OTHER="
+for /f "tokens=2 delims=:" %%a in ('ipconfig ^| findstr /i "IPv4"') do (
+    for /f "tokens=1 delims= " %%b in ("%%a") do (
+        set "CAND=%%b"
+        if /i "!CAND!" neq "127.0.0.1" (
+            REM 取第一个 192.168.x（ipconfig 中主网卡 WiFi/以太网排在虚拟网卡前）
+            if not defined IP_192 (
+                echo !CAND! | findstr /b "192.168." >nul && set "IP_192=!CAND!"
+            )
+            REM 其余私有网段（10.x / 172.16-31.x）作为备选
+            if not defined IP_OTHER (
+                echo !CAND! | findstr /b "10." >nul && set "IP_OTHER=!CAND!"
+            )
+            if not defined IP_OTHER (
+                echo !CAND! | findstr /r /b "172\.[1-3][0-9]\." >nul && set "IP_OTHER=!CAND!"
+            )
+        )
+    )
+)
+REM 优先级：192.168.x > 其他私有网段 > localhost
+if defined IP_192 (
+    set "LAN_IP=!IP_192!"
+) else if defined IP_OTHER (
+    set "LAN_IP=!IP_OTHER!"
+) else (
+    set "LAN_IP=localhost"
+)
+echo   局域网访问地址 = http://!LAN_IP!:5173
+echo.
+
+REM ============================================
 REM 检查 8081 / 5173 是否已在监听
 REM ============================================
 set "BACK_UP="
@@ -80,12 +116,12 @@ if errorlevel 1 (
     echo [提示] 60 秒内后端未就绪，请查看后端窗口日志。浏览器仍将打开前端页面。
 )
 echo        正在打开浏览器...
-start http://192.168.68.20:5173
+start http://!LAN_IP!:5173
 echo.
 echo ============================================
 echo   已启动。关闭两个服务窗口即可停止前后端
 echo   本机访问：http://localhost:5173
-echo   局域网访问：http://192.168.68.20:5173
+echo   局域网访问：http://!LAN_IP!:5173
 echo   后端接口：http://localhost:8081/api
 echo ============================================
 echo 本窗口可安全关闭。

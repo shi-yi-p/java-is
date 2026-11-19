@@ -8,9 +8,18 @@
 
 USE shark_music;
 
--- ---------- 1) 播放历史加时长字段 ----------
-ALTER TABLE play_history
-    ADD COLUMN duration INT NOT NULL DEFAULT 0 COMMENT '本次收听的秒数' AFTER song_id;
+-- ---------- 1) 播放历史加时长字段（幂等：列已存在则跳过） ----------
+SET @col_exists = (
+  SELECT COUNT(*) FROM information_schema.COLUMNS
+  WHERE TABLE_SCHEMA = 'shark_music'
+    AND TABLE_NAME = 'play_history'
+    AND COLUMN_NAME = 'duration'
+);
+SET @sql = IF(@col_exists = 0,
+  'ALTER TABLE play_history ADD COLUMN duration INT NOT NULL DEFAULT 0 COMMENT ''本次收听的秒数'' AFTER song_id;',
+  'SELECT ''play_history.duration 列已存在，跳过'' AS info;'
+);
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
 
 -- ---------- 2) 论坛帖子表 ----------
 CREATE TABLE IF NOT EXISTS forum_post (

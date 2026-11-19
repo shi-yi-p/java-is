@@ -23,6 +23,7 @@ CREATE TABLE IF NOT EXISTS `user` (
   `account`     VARCHAR(64)   NOT NULL                COMMENT '账户（手机号/邮箱/用户名）',
   `password`    VARCHAR(100)  NOT NULL                COMMENT '密码（BCrypt 哈希密文）',
   `nickname`    VARCHAR(32)   NULL                    COMMENT '昵称',
+  `avatar`      VARCHAR(255)  NULL                    COMMENT '头像（URL 或 emoji，空则前端用昵称首字母兜底）',
   `create_time` DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP                 COMMENT '创建时间',
   `update_time` DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   `deleted`     TINYINT       NOT NULL DEFAULT 0       COMMENT '逻辑删除：0-未删 1-已删',

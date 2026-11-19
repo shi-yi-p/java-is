@@ -34,6 +34,9 @@ public class Song {
     /** 真实音源地址（可选）：存 mp3/m4a 直链，存在则播放器优先使用真实音源 */
     private String url;
 
+    /** LRC 歌词（原创，规避版权；带时间戳，空则前端无歌词） */
+    private String lyric;
+
     /** 播放量 */
     private Long plays;
 

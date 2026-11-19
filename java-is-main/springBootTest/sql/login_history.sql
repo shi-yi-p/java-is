@@ -2,8 +2,8 @@
 -- 登录历史表（方案 B：后端持久化历史账户）
 -- 记录每次成功登录/注册自动登录，用于登录页「历史账户」下拉。
 -- ----------------------------
-DROP TABLE IF EXISTS `login_history`;
-CREATE TABLE `login_history`  (
+USE shark_music;
+CREATE TABLE IF NOT EXISTS `login_history`  (
   `id` bigint NOT NULL AUTO_INCREMENT COMMENT '主键',
   `user_id` bigint NOT NULL COMMENT '用户 id（关联 user.id）',
   `account` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '账户（手机号/邮箱/用户名）',

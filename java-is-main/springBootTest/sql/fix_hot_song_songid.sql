@@ -10,11 +10,22 @@
 
 USE shark_music;
 
--- ---------- 1. 给 4 张热歌表增加 song_id 关联列 ----------
-ALTER TABLE netease_hot_song ADD COLUMN song_id bigint NULL COMMENT '关联主曲库 song.id' AFTER deleted;
-ALTER TABLE qq_hot_song      ADD COLUMN song_id bigint NULL COMMENT '关联主曲库 song.id' AFTER deleted;
-ALTER TABLE kugou_hot_song   ADD COLUMN song_id bigint NULL COMMENT '关联主曲库 song.id' AFTER deleted;
-ALTER TABLE douyin_hot_song  ADD COLUMN song_id bigint NULL COMMENT '关联主曲库 song.id' AFTER deleted;
+-- ---------- 1. 给 4 张热歌表增加 song_id 关联列（幂等：列已存在则跳过） ----------
+SET @cn = (SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='shark_music' AND TABLE_NAME='netease_hot_song' AND COLUMN_NAME='song_id');
+SET @sql = IF(@cn=0, 'ALTER TABLE netease_hot_song ADD COLUMN song_id bigint NULL COMMENT ''关联主曲库 song.id'' AFTER deleted;', 'SELECT ''netease_hot_song.song_id 已存在，跳过'' AS info;');
+PREPARE s FROM @sql; EXECUTE s; DEALLOCATE PREPARE s;
+
+SET @cn = (SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='shark_music' AND TABLE_NAME='qq_hot_song' AND COLUMN_NAME='song_id');
+SET @sql = IF(@cn=0, 'ALTER TABLE qq_hot_song ADD COLUMN song_id bigint NULL COMMENT ''关联主曲库 song.id'' AFTER deleted;', 'SELECT ''qq_hot_song.song_id 已存在，跳过'' AS info;');
+PREPARE s FROM @sql; EXECUTE s; DEALLOCATE PREPARE s;
+
+SET @cn = (SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='shark_music' AND TABLE_NAME='kugou_hot_song' AND COLUMN_NAME='song_id');
+SET @sql = IF(@cn=0, 'ALTER TABLE kugou_hot_song ADD COLUMN song_id bigint NULL COMMENT ''关联主曲库 song.id'' AFTER deleted;', 'SELECT ''kugou_hot_song.song_id 已存在，跳过'' AS info;');
+PREPARE s FROM @sql; EXECUTE s; DEALLOCATE PREPARE s;
+
+SET @cn = (SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='shark_music' AND TABLE_NAME='douyin_hot_song' AND COLUMN_NAME='song_id');
+SET @sql = IF(@cn=0, 'ALTER TABLE douyin_hot_song ADD COLUMN song_id bigint NULL COMMENT ''关联主曲库 song.id'' AFTER deleted;', 'SELECT ''douyin_hot_song.song_id 已存在，跳过'' AS info;');
+PREPARE s FROM @sql; EXECUTE s; DEALLOCATE PREPARE s;
 
 -- ---------- 2. 把 4 张热歌表歌曲并入主曲库 song 表 ----------
 -- 利用 uk_title_artist 唯一键，重复则忽略（不覆盖已有数据）。
