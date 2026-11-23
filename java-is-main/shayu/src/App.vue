@@ -6,8 +6,6 @@ import ProfileView from './views/ProfileView.vue'
 import ForumView from './views/ForumView.vue'
 import RankingView from './views/RankingView.vue'
 import UserView from './views/UserView.vue'
-import SingerView from './views/SingerView.vue'
-import FeedbackView from './views/FeedbackView.vue'
 import AdminLoginView from './views/AdminLoginView.vue'
 import AdminDashboardView from './views/AdminDashboardView.vue'
 
@@ -17,8 +15,6 @@ import AdminDashboardView from './views/AdminDashboardView.vue'
  * #/profile    个人主页
  * #/forum      论坛
  * #/ranking    听歌总排名榜
- * #/singer/<id> 歌手主页（作品列表）
- * #/feedback    意见反馈页
  * #/rank        榜单页      ┐ 都由 HomeView 承载（共用顶栏/导航/播放器），
  * #/audiobook   听书页      │ HomeView 内部再按 hash 切换内容视图
  * #/live        直播页      ┘
@@ -35,7 +31,7 @@ const readAdminToken = () => {
 const HOME_PAGES = ['home', 'rank', 'audiobook', 'live']
 
 /* 需要登录的独立页面 */
-const AUTH_PAGES = ['profile', 'forum', 'ranking', 'user', 'singer', 'feedback']
+const AUTH_PAGES = ['profile', 'forum', 'ranking', 'user']
 
 /* 归一化：rank/audiobook 也由 HomeView 渲染，避免落到模板兜底分支 */
 const toView = r => (HOME_PAGES.includes(r) ? 'home' : r)
@@ -105,8 +101,6 @@ const pearls = ref([])
   <ForumView v-else-if="route === 'forum'" />
   <RankingView v-else-if="route === 'ranking'" />
   <UserView v-else-if="route === 'user'" />
-  <SingerView v-else-if="route === 'singer'" />
-  <FeedbackView v-else-if="route === 'feedback'" />
   <AdminLoginView v-else-if="route === 'admin-login'" />
   <AdminDashboardView v-else />
 </template>

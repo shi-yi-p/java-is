@@ -62,7 +62,7 @@ public class SocialServiceImpl implements SocialService {
 
     @Override
     @Transactional
-    public ForumPostVO createPost(Long userId, String title, String content, String category) {
+    public ForumPostVO createPost(Long userId, String title, String content, String category, String province) {
         ForumPost post = new ForumPost();
         post.setUserId(userId);
         post.setTitle(title);
@@ -70,11 +70,16 @@ public class SocialServiceImpl implements SocialService {
         // 板块：非法值兜底为"闲聊"
         String cat = (category == null || category.trim().isEmpty()) ? "chat" : category.trim();
         post.setCategory(cat);
+        // 省份：未选择时留空（数据库默认值）
+        post.setProvince(province == null ? "" : province.trim());
+        // create_time 由数据库 CURRENT_TIMESTAMP 自动填充，即发帖日期时间
         post.setLikes(0L);
         post.setComments(0L);
         post.setViews(0L);
         postMapper.insert(post);
-        return toPostVO(post, loadUsers(java.util.Collections.singletonList(post.getUserId())));
+        // 主键与 create_time 由数据库生成，insert 后回查以便 VO 返回完整日期时间
+        ForumPost saved = postMapper.selectById(post.getId());
+        return toPostVO(saved != null ? saved : post, loadUsers(java.util.Collections.singletonList(post.getUserId())));
     }
 
     @Override
@@ -141,6 +146,7 @@ public class SocialServiceImpl implements SocialService {
         vo.setTitle(p.getTitle());
         vo.setContent(p.getContent());
         vo.setCategory(p.getCategory());
+        vo.setProvince(p.getProvince() == null ? "" : p.getProvince());
         vo.setLikes(p.getLikes() == null ? 0 : p.getLikes());
         vo.setComments(p.getComments() == null ? 0 : p.getComments());
         vo.setViews(p.getViews() == null ? 0 : p.getViews());

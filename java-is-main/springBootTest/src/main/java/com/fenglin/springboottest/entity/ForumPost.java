@@ -30,6 +30,9 @@ public class ForumPost {
     /** 帖子板块：music 音乐分享 / chat 闲聊灌水 / song 歌单推荐 / sing 唱歌达人 / story 听歌故事 / help 求助问答 */
     private String category;
 
+    /** 发帖省份 */
+    private String province;
+
     /** 点赞数 */
     private Long likes;
 

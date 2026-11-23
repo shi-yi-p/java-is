@@ -27,6 +27,8 @@ CREATE TABLE IF NOT EXISTS forum_post (
     user_id     BIGINT       NOT NULL COMMENT '发帖用户 id',
     title       VARCHAR(128) NOT NULL COMMENT '帖子标题',
     content     TEXT         NOT NULL COMMENT '帖子正文',
+    category    VARCHAR(32)  NOT NULL DEFAULT 'music' COMMENT '帖子板块',
+    province    VARCHAR(32)  NOT NULL DEFAULT '' COMMENT '发帖省份',
     likes       BIGINT       NOT NULL DEFAULT 0 COMMENT '点赞数',
     comments    BIGINT       NOT NULL DEFAULT 0 COMMENT '评论数',
     views       BIGINT       NOT NULL DEFAULT 0 COMMENT '浏览数',
@@ -36,6 +38,27 @@ CREATE TABLE IF NOT EXISTS forum_post (
     KEY idx_post_user (user_id),
     KEY idx_post_time (create_time)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='论坛帖子';
+
+-- 兼容旧版 forum_post：幂等补齐 category / province 列
+SET @col_exists = (
+  SELECT COUNT(*) FROM information_schema.COLUMNS
+  WHERE TABLE_SCHEMA = 'shark_music' AND TABLE_NAME = 'forum_post' AND COLUMN_NAME = 'category'
+);
+SET @sql = IF(@col_exists = 0,
+  'ALTER TABLE forum_post ADD COLUMN category VARCHAR(32) NOT NULL DEFAULT ''music'' COMMENT ''帖子板块'' AFTER content;',
+  'SELECT ''forum_post.category 列已存在，跳过'' AS info;'
+);
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+SET @col_exists = (
+  SELECT COUNT(*) FROM information_schema.COLUMNS
+  WHERE TABLE_SCHEMA = 'shark_music' AND TABLE_NAME = 'forum_post' AND COLUMN_NAME = 'province'
+);
+SET @sql = IF(@col_exists = 0,
+  'ALTER TABLE forum_post ADD COLUMN province VARCHAR(32) NOT NULL DEFAULT '''' COMMENT ''发帖省份'' AFTER category;',
+  'SELECT ''forum_post.province 列已存在，跳过'' AS info;'
+);
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
 
 -- ---------- 3) 论坛评论表 ----------
 CREATE TABLE IF NOT EXISTS forum_comment (

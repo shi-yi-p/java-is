@@ -18,8 +18,8 @@ public interface SocialService {
     /** 帖子详情（含评论） */
     ForumPostVO getPost(Long postId);
 
-    /** 发帖（category 指定板块） */
-    ForumPostVO createPost(Long userId, String title, String content, String category);
+    /** 发帖（category 指定板块，province 指定发帖省份；日期时间由数据库自动记录） */
+    ForumPostVO createPost(Long userId, String title, String content, String category, String province);
 
     /** 点赞帖子 */
     boolean likePost(Long postId);

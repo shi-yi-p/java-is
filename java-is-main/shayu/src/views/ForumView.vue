@@ -29,6 +29,15 @@ const CATEGORIES = [
 
 const activeCategory = ref('')   // 当前选中板块（'' = 全部）
 
+/* ============ 省份选项（发帖时选择，随帖子一起保存展示） ============ */
+const PROVINCES = [
+  '北京', '天津', '河北', '山西', '内蒙古', '辽宁', '吉林', '黑龙江',
+  '上海', '江苏', '浙江', '安徽', '福建', '江西', '山东', '河南',
+  '湖北', '湖南', '广东', '广西', '海南', '重庆', '四川', '贵州',
+  '云南', '西藏', '陕西', '甘肃', '青海', '宁夏', '新疆',
+  '中国香港', '中国澳门', '中国台湾'
+]
+
 function catInfo(key) {
   return CATEGORIES.find(c => c.key === key) || CATEGORIES[0]
 }
@@ -62,6 +71,7 @@ const showEditor = ref(false)
 const newTitle = ref('')
 const newContent = ref('')
 const newCategory = ref('chat')   // 发帖默认板块
+const newProvince = ref('')       // 发帖省份（可选）
 
 async function submitPost() {
   const title = newTitle.value.trim()
@@ -72,13 +82,14 @@ async function submitPost() {
     const res = await fetch(API + '/api/social/post', {
       method: 'POST',
       headers: authHeaders(),
-      body: JSON.stringify({ title, content, category: newCategory.value })
+      body: JSON.stringify({ title, content, category: newCategory.value, province: newProvince.value })
     })
     const d = await res.json().catch(() => ({}))
     if (res.ok) {
       toast('发帖成功 🎉')
       newTitle.value = ''
       newContent.value = ''
+      newProvince.value = ''
       showEditor.value = false
       // 跳到刚发布的板块，方便看到自己的帖子
       activeCategory.value = newCategory.value
@@ -150,10 +161,9 @@ async function likePost(p) {
   } catch (e) { toast('操作失败') }
 }
 
-/* 时间截断显示 */
+/* 日期时间完整展示（发帖时由后端自动记录，格式 yyyy-MM-dd HH:mm） */
 function shortTime(t) {
-  if (!t) return ''
-  return t.slice(5, 16) // "MM-DD HH:mm"
+  return t || ''
 }
 
 /* 内容截断 */
@@ -246,6 +256,14 @@ function goHome() { location.hash = '#/home' }
             @click="newCategory = c.key"
           >{{ c.emoji }} {{ c.label }}</button>
         </div>
+        <div class="fm-editor-row">
+          <span class="fm-editor-cats-label">📍 省份：</span>
+          <select v-model="newProvince" class="fm-editor-select">
+            <option value="">不公开</option>
+            <option v-for="pv in PROVINCES" :key="pv" :value="pv">{{ pv }}</option>
+          </select>
+          <span class="fm-editor-date">🕒 发布时间：发帖时自动记录</span>
+        </div>
         <input v-model="newTitle" class="fm-editor-title" type="text" placeholder="标题（一句话说清主题）" maxlength="128" />
         <textarea v-model="newContent" class="fm-editor-content" placeholder="正文内容，鲨鲨们等着看呢…" rows="5"></textarea>
         <div class="fm-editor-foot">
@@ -263,7 +281,7 @@ function goHome() { location.hash = '#/home' }
               <span class="fm-post-ava">{{ p.avatarLetter }}</span>
               <div class="fm-post-meta">
                 <b>{{ p.nickname }}</b>
-                <span>{{ shortTime(p.createTime) }}</span>
+                <span>🕒 {{ shortTime(p.createTime) }}<template v-if="p.province"> · 📍 {{ p.province }}</template></span>
               </div>
               <span class="fm-post-tag" :style="{ background: catInfo(p.category).soft, color: catInfo(p.category).color }">
                 {{ catInfo(p.category).emoji }} {{ catInfo(p.category).label }}
@@ -304,7 +322,8 @@ function goHome() { location.hash = '#/home' }
         <div class="fm-modal-meta">
           <span class="fm-post-ava sm">{{ detailPost.avatarLetter }}</span>
           <b>{{ detailPost.nickname }}</b>
-          <span>{{ detailPost.createTime }}</span>
+          <span>🕒 {{ detailPost.createTime }}</span>
+          <span v-if="detailPost.province">📍 {{ detailPost.province }}</span>
           <button class="fm-like-btn" type="button" @click="likePost(detailPost)">❤ {{ detailPost.likes }}</button>
         </div>
         <p class="fm-modal-content">{{ detailPost.content }}</p>
@@ -483,6 +502,14 @@ function goHome() { location.hash = '#/home' }
   }
   .fm-cat-pick:hover { transform: translateY(-1px); }
   .fm-cat-pick.on { border-color: var(--fm-ink); box-shadow: 0 2px 0 var(--fm-ink); }
+  .fm-editor-row { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 14px; }
+  .fm-editor-select {
+    font-family: var(--font); font-size: 13px; font-weight: 700; color: var(--fm-ink);
+    background: var(--fm-cream); border: 3px solid var(--fm-ink); border-radius: 12px;
+    height: 38px; padding: 0 12px; cursor: pointer;
+  }
+  .fm-editor-select:focus { outline: none; box-shadow: 0 0 0 4px rgba(143,188,240,0.45); }
+  .fm-editor-date { font-size: 12px; font-weight: 700; color: #7d8aa0; }
   .fm-editor-title {
     width: 100%; height: 44px; padding: 0 16px;
     border: 3px solid var(--fm-ink); border-radius: 14px;

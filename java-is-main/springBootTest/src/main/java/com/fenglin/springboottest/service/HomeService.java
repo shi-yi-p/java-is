@@ -1,6 +1,7 @@
 package com.fenglin.springboottest.service;
 
 import com.fenglin.springboottest.dto.ChartVO;
+import com.fenglin.springboottest.dto.DailyTopSongVO;
 import com.fenglin.springboottest.entity.Audiobook;
 import com.fenglin.springboottest.entity.Channel;
 import com.fenglin.springboottest.entity.Playlist;
@@ -27,4 +28,7 @@ public interface HomeService {
 
     /** 热门歌手列表，tab 为空时返回全部，否则按地区分类过滤 */
     List<Singer> singers(String tab);
+
+    /** 当日播放量最多的 5 首歌曲（不足 5 首时用累计播放量兜底） */
+    List<DailyTopSongVO> dailyTopSongs();
 }

@@ -14,7 +14,9 @@ import com.fenglin.springboottest.entity.User;
 import com.fenglin.springboottest.entity.UserFavorite;
 import com.fenglin.springboottest.entity.UserFollow;
 import com.fenglin.springboottest.entity.UserMoment;
+import com.fenglin.springboottest.entity.UserMomentLike;
 import com.fenglin.springboottest.entity.UserPlaylist;
+import com.fenglin.springboottest.entity.UserPlaylistSong;
 import com.fenglin.springboottest.mapper.PlayHistoryMapper;
 import com.fenglin.springboottest.mapper.PlaylistMapper;
 import com.fenglin.springboottest.mapper.SongMapper;
@@ -22,7 +24,9 @@ import com.fenglin.springboottest.mapper.UserFavoriteMapper;
 import com.fenglin.springboottest.mapper.UserFollowMapper;
 import com.fenglin.springboottest.mapper.UserMapper;
 import com.fenglin.springboottest.mapper.UserMomentMapper;
+import com.fenglin.springboottest.mapper.UserMomentLikeMapper;
 import com.fenglin.springboottest.mapper.UserPlaylistMapper;
+import com.fenglin.springboottest.mapper.UserPlaylistSongMapper;
 import com.fenglin.springboottest.service.ProfileService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -55,7 +59,11 @@ public class ProfileServiceImpl implements ProfileService {
     @Autowired
     private UserMomentMapper momentMapper;
     @Autowired
+    private UserMomentLikeMapper momentLikeMapper;
+    @Autowired
     private UserPlaylistMapper userPlaylistMapper;
+    @Autowired
+    private UserPlaylistSongMapper playlistSongMapper;
 
     private static final DateTimeFormatter FMT = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
 
@@ -195,7 +203,8 @@ public class ProfileServiceImpl implements ProfileService {
 
     @Override
     public User updateAvatar(Long userId, String avatar) {
-        if (avatar == null || avatar.isBlank()) {
+        // null 表示参数缺失；空字符串表示用户主动恢复默认头像
+        if (avatar == null) {
             return null;
         }
         User user = userMapper.selectById(userId);
@@ -346,12 +355,19 @@ public class ProfileServiceImpl implements ProfileService {
 
     @Override
     public List<MomentVO> moments(Long userId) {
+        return moments(userId, userId);
+    }
+
+    @Override
+    public List<MomentVO> moments(Long userId, Long viewerId) {
         List<UserMoment> list = momentMapper.selectList(Wrappers.<UserMoment>lambdaQuery()
                 .eq(UserMoment::getUserId, userId)
                 .orderByDesc(UserMoment::getCreateTime));
         if (list.isEmpty()) {
             return new ArrayList<>();
         }
+
+        List<Long> momentIds = list.stream().map(UserMoment::getId).collect(Collectors.toList());
 
         // 批量预取涉及的歌曲与歌单，消除 N+1
         List<Long> songIds = list.stream().map(UserMoment::getSongId)
@@ -368,6 +384,17 @@ public class ProfileServiceImpl implements ProfileService {
                 : playlistMapper.selectBatchIds(playlistIds).stream()
                         .collect(Collectors.toMap(Playlist::getId, p -> p, (a, b) -> a));
 
+        // 批量统计每条动态的点赞数
+        java.util.Map<Long, Long> likeCountMap = momentLikeMapper.selectList(
+                        Wrappers.<UserMomentLike>lambdaQuery().in(UserMomentLike::getMomentId, momentIds))
+                .stream().collect(Collectors.groupingBy(UserMomentLike::getMomentId, Collectors.counting()));
+        // 当前查看者已点赞的动态 id 集合
+        java.util.Set<Long> likedIds = (viewerId == null) ? java.util.Collections.emptySet()
+                : momentLikeMapper.selectList(Wrappers.<UserMomentLike>lambdaQuery()
+                        .in(UserMomentLike::getMomentId, momentIds)
+                        .eq(UserMomentLike::getUserId, viewerId))
+                        .stream().map(UserMomentLike::getMomentId).collect(Collectors.toSet());
+
         List<MomentVO> result = new ArrayList<>();
         for (UserMoment m : list) {
             MomentVO vo = new MomentVO();
@@ -383,9 +410,72 @@ public class ProfileServiceImpl implements ProfileService {
                 vo.setPlaylistTitle(p != null ? p.getTitle() : null);
             }
             vo.setCreateTime(m.getCreateTime() != null ? m.getCreateTime().format(FMT) : "");
+            Long lc = likeCountMap.get(m.getId());
+            vo.setLikeCount(lc != null ? lc.intValue() : 0);
+            vo.setLiked(likedIds.contains(m.getId()));
             result.add(vo);
         }
         return result;
+    }
+
+    @Override
+    @Transactional
+    public Boolean toggleMomentLike(Long userId, Long momentId) {
+        if (momentMapper.selectById(momentId) == null) {
+            return null; // 动态不存在
+        }
+        UserMomentLike exist = momentLikeMapper.selectOne(Wrappers.<UserMomentLike>lambdaQuery()
+                .eq(UserMomentLike::getMomentId, momentId)
+                .eq(UserMomentLike::getUserId, userId));
+        if (exist != null) {
+            momentLikeMapper.deleteById(exist.getId());
+            return false; // 取消点赞
+        }
+        UserMomentLike like = new UserMomentLike();
+        like.setMomentId(momentId);
+        like.setUserId(userId);
+        momentLikeMapper.insert(like);
+        return true; // 点赞成功
+    }
+
+    @Override
+    public MomentVO publishMoment(Long userId, String content) {
+        if (content == null || content.trim().isEmpty()) {
+            return null;
+        }
+        String text = content.trim();
+        if (text.length() > 500) {
+            text = text.substring(0, 500);
+        }
+        addMoment(userId, "post", text, null, null);
+        UserMoment m = momentMapper.selectList(Wrappers.<UserMoment>lambdaQuery()
+                        .eq(UserMoment::getUserId, userId)
+                        .eq(UserMoment::getType, "post")
+                        .eq(UserMoment::getContent, text)
+                        .orderByDesc(UserMoment::getId))
+                .stream().findFirst().orElse(null);
+        if (m == null) {
+            return null;
+        }
+        MomentVO vo = new MomentVO();
+        vo.setId(m.getId());
+        vo.setType(m.getType());
+        vo.setContent(m.getContent());
+        vo.setCreateTime(m.getCreateTime() != null ? m.getCreateTime().format(FMT) : "");
+        return vo;
+    }
+
+    @Override
+    public boolean deleteMoment(Long userId, Long momentId) {
+        UserMoment m = momentMapper.selectById(momentId);
+        if (m == null || !userId.equals(m.getUserId())) {
+            return false;
+        }
+        momentMapper.deleteById(momentId);
+        // 级联清理该动态的点赞记录，避免留下指向已删动态的孤儿数据
+        momentLikeMapper.delete(Wrappers.<UserMomentLike>lambdaQuery()
+                .eq(UserMomentLike::getMomentId, momentId));
+        return true;
     }
 
     private void addMoment(Long userId, String type, String content, Long songId, Long playlistId) {
@@ -402,10 +492,17 @@ public class ProfileServiceImpl implements ProfileService {
 
     @Override
     public List<UserPlaylist> myPlaylists(Long userId) {
-        return userPlaylistMapper.selectList(Wrappers.<UserPlaylist>lambdaQuery()
+        List<UserPlaylist> list = userPlaylistMapper.selectList(Wrappers.<UserPlaylist>lambdaQuery()
                 .eq(UserPlaylist::getUserId, userId)
                 .orderByAsc(UserPlaylist::getSortOrder)
                 .orderByAsc(UserPlaylist::getId));
+        // 填充每个歌单的歌曲数量
+        for (UserPlaylist p : list) {
+            Long count = playlistSongMapper.selectCount(Wrappers.<UserPlaylistSong>lambdaQuery()
+                    .eq(UserPlaylistSong::getPlaylistId, p.getId()));
+            p.setSongCount(count != null ? count.intValue() : 0);
+        }
+        return list;
     }
 
     @Override
@@ -465,6 +562,85 @@ public class ProfileServiceImpl implements ProfileService {
             return false;
         }
         userPlaylistMapper.deleteById(playlistId);
+        // 一并清理该歌单的歌曲关联，避免残留脏数据
+        playlistSongMapper.delete(Wrappers.<UserPlaylistSong>lambdaQuery()
+                .eq(UserPlaylistSong::getPlaylistId, playlistId));
+        return true;
+    }
+
+    /* ============ 个人歌单内的歌曲（增删改查） ============ */
+
+    /** 校验歌单归属，返回歌单实体；不存在或不属于该用户返回 null */
+    private UserPlaylist ownedPlaylist(Long userId, Long playlistId) {
+        if (playlistId == null) return null;
+        return userPlaylistMapper.selectOne(Wrappers.<UserPlaylist>lambdaQuery()
+                .eq(UserPlaylist::getId, playlistId)
+                .eq(UserPlaylist::getUserId, userId));
+    }
+
+    @Override
+    public List<Song> playlistSongs(Long userId, Long playlistId) {
+        if (ownedPlaylist(userId, playlistId) == null) {
+            return null; // 歌单不存在或不属于该用户
+        }
+        List<UserPlaylistSong> links = playlistSongMapper.selectList(
+                Wrappers.<UserPlaylistSong>lambdaQuery()
+                        .eq(UserPlaylistSong::getPlaylistId, playlistId)
+                        .orderByAsc(UserPlaylistSong::getSortOrder)
+                        .orderByAsc(UserPlaylistSong::getId));
+        if (links.isEmpty()) {
+            return new ArrayList<>();
+        }
+        List<Long> songIds = links.stream().map(UserPlaylistSong::getSongId).collect(Collectors.toList());
+        List<Song> songs = songMapper.selectBatchIds(songIds);
+        // 按歌单中的排序返回
+        java.util.Map<Long, Song> songMap = songs.stream()
+                .collect(Collectors.toMap(Song::getId, s -> s, (a, b) -> a));
+        List<Song> ordered = new ArrayList<>();
+        for (Long sid : songIds) {
+            Song s = songMap.get(sid);
+            if (s != null) ordered.add(s);
+        }
+        return ordered;
+    }
+
+    @Override
+    @Transactional
+    public int addPlaylistSong(Long userId, Long playlistId, Long songId) {
+        if (songId == null || songMapper.selectById(songId) == null) {
+            return 0; // 歌曲不存在
+        }
+        if (ownedPlaylist(userId, playlistId) == null) {
+            return -1; // 歌单不存在或不属于该用户
+        }
+        Long exists = playlistSongMapper.selectCount(Wrappers.<UserPlaylistSong>lambdaQuery()
+                .eq(UserPlaylistSong::getPlaylistId, playlistId)
+                .eq(UserPlaylistSong::getSongId, songId));
+        if (exists != null && exists > 0) {
+            return 0; // 已在歌单中
+        }
+        Integer maxOrder = playlistSongMapper.selectList(Wrappers.<UserPlaylistSong>lambdaQuery()
+                        .eq(UserPlaylistSong::getPlaylistId, playlistId)
+                        .orderByDesc(UserPlaylistSong::getSortOrder))
+                .stream().map(UserPlaylistSong::getSortOrder)
+                .filter(java.util.Objects::nonNull)
+                .findFirst().orElse(0);
+        UserPlaylistSong link = new UserPlaylistSong();
+        link.setPlaylistId(playlistId);
+        link.setSongId(songId);
+        link.setSortOrder((maxOrder == null ? 0 : maxOrder) + 1);
+        playlistSongMapper.insert(link);
+        return 1;
+    }
+
+    @Override
+    public boolean removePlaylistSong(Long userId, Long playlistId, Long songId) {
+        if (ownedPlaylist(userId, playlistId) == null) {
+            return false;
+        }
+        playlistSongMapper.delete(Wrappers.<UserPlaylistSong>lambdaQuery()
+                .eq(UserPlaylistSong::getPlaylistId, playlistId)
+                .eq(UserPlaylistSong::getSongId, songId));
         return true;
     }
 

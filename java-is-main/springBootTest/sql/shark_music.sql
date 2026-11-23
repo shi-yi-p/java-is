@@ -255,6 +255,7 @@ CREATE TABLE `forum_post`  (
   `title` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '帖子标题',
   `content` text CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '帖子正文',
   `category` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL DEFAULT 'music' COMMENT '帖子板块：music闲聊/song歌单/sing唱歌/story听歌故事/help求助',
+  `province` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL DEFAULT '' COMMENT '发帖省份',
   `likes` bigint NOT NULL DEFAULT 0 COMMENT '点赞数',
   `comments` bigint NOT NULL DEFAULT 0 COMMENT '评论数',
   `views` bigint NOT NULL DEFAULT 0 COMMENT '浏览数',
@@ -268,7 +269,7 @@ CREATE TABLE `forum_post`  (
 -- ----------------------------
 -- Records of forum_post
 -- ----------------------------
-INSERT INTO `forum_post` VALUES (4, 1, '宿敌', '这首歌真好听', 'music', 2, 0, 2, '2026-11-16 09:08:07', 0);
+INSERT INTO `forum_post` (`id`, `user_id`, `title`, `content`, `category`, `province`, `likes`, `comments`, `views`, `create_time`, `deleted`) VALUES (4, 1, '宿敌', '这首歌真好听', 'music', '', 2, 0, 2, '2026-11-16 09:08:07', 0);
 
 -- ----------------------------
 -- Table structure for kugou_hot_song
@@ -986,6 +987,20 @@ INSERT INTO `user_moment` VALUES (99, 1, 'listen', '正在听「海阔天空」'
 INSERT INTO `user_moment` VALUES (100, 16, 'listen', '正在听「小美满」', 126, NULL, '2026-11-19 15:07:29', 0);
 
 -- ----------------------------
+-- Table structure for user_moment_like
+-- ----------------------------
+DROP TABLE IF EXISTS `user_moment_like`;
+CREATE TABLE `user_moment_like`  (
+  `id` bigint NOT NULL AUTO_INCREMENT COMMENT '主键',
+  `moment_id` bigint NOT NULL COMMENT '动态 id',
+  `user_id` bigint NOT NULL COMMENT '点赞用户 id',
+  `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '点赞时间',
+  PRIMARY KEY (`id`) USING BTREE,
+  UNIQUE INDEX `uk_moment_user`(`moment_id` ASC, `user_id` ASC) USING BTREE,
+  INDEX `idx_user`(`user_id` ASC) USING BTREE
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '动态点赞表' ROW_FORMAT = DYNAMIC;
+
+-- ----------------------------
 -- Table structure for user_playlist
 -- ----------------------------
 DROP TABLE IF EXISTS `user_playlist`;
@@ -1005,5 +1020,20 @@ CREATE TABLE `user_playlist`  (
 -- ----------------------------
 -- Records of user_playlist
 -- ----------------------------
+
+-- ----------------------------
+-- Table structure for user_playlist_song
+-- ----------------------------
+DROP TABLE IF EXISTS `user_playlist_song`;
+CREATE TABLE `user_playlist_song`  (
+  `id` bigint NOT NULL AUTO_INCREMENT COMMENT '主键',
+  `playlist_id` bigint NOT NULL COMMENT '歌单 id',
+  `song_id` bigint NOT NULL COMMENT '歌曲 id',
+  `sort_order` int NOT NULL DEFAULT 0 COMMENT '歌曲在歌单中的排序',
+  `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '加入时间',
+  PRIMARY KEY (`id`) USING BTREE,
+  UNIQUE INDEX `uk_pl_song`(`playlist_id` ASC, `song_id` ASC) USING BTREE,
+  INDEX `idx_song`(`song_id` ASC) USING BTREE
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '个人歌单歌曲关联表' ROW_FORMAT = DYNAMIC;
 
 SET FOREIGN_KEY_CHECKS = 1;

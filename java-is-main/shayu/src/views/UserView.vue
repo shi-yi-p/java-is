@@ -30,9 +30,18 @@ const moments = ref([])
 const loading = ref(false)
 const followBusy = ref(false)
 
+function isImageAvatar(v) {
+  const s = (v || '').trim()
+  return /^(https?:\/\/|\/uploads\/|data:image\/)/i.test(s)
+}
+const avatarSrc = computed(() => {
+  const av = profile.value && profile.value.avatar
+  return av && isImageAvatar(av) ? av.trim() : ''
+})
 const avatarLetter = computed(() => {
   const p = profile.value
-  if (p && p.avatar && p.avatar.trim()) return p.avatar.trim()
+  const av = p && p.avatar && p.avatar.trim()
+  if (av && !isImageAvatar(av)) return av
   const name = p ? (p.nickname || p.account || '鲨') : '鲨'
   return name.slice(0, 1)
 })
@@ -56,7 +65,7 @@ function fmtPlays(n) {
   return String(v)
 }
 function momentIcon(type) {
-  return { listen: '🎧', favorite: '❤️', create_playlist: '🦈', follow: '➕' }[type] || '🎵'
+  return { listen: '🎧', favorite: '❤️', create_playlist: '🦈', follow: '➕', post: '✍️' }[type] || '🎵'
 }
 
 async function loadUser() {
@@ -87,6 +96,18 @@ async function loadMoments() {
   } catch (e) {
     moments.value = []
   }
+}
+
+async function toggleMomentLike(m) {
+  try {
+    const res = await fetch(API + '/api/profile/moment/' + m.id + '/like', {
+      method: 'POST', headers: authHeaders()
+    })
+    const d = await res.json().catch(() => ({}))
+    if (!res.ok) return toast(d.message || '操作失败')
+    m.liked = d.data === true
+    m.likeCount = Math.max(0, (m.likeCount || 0) + (m.liked ? 1 : -1))
+  } catch (e) { toast('网络错误，请稍后重试 🔌') }
 }
 
 async function toggleFollow() {
@@ -136,7 +157,8 @@ onMounted(loadUser)
 
       <div v-else class="uv-hero-main">
         <div class="uv-avatar">
-          <span>{{ avatarLetter }}</span>
+          <img v-if="avatarSrc" class="uv-avatar-img" :src="avatarSrc" alt="头像" />
+          <span v-else>{{ avatarLetter }}</span>
           <i class="uv-avatar-badge">Lv.{{ profile.level }}</i>
         </div>
         <div class="uv-hero-info">
@@ -195,6 +217,11 @@ onMounted(loadUser)
               <p>{{ m.content }}</p>
               <span class="uv-moment-time">{{ m.createTime }}</span>
             </div>
+            <button
+              class="uv-moment-like" :class="{ on: m.liked }" type="button"
+              :title="m.liked ? '取消点赞' : '点赞'"
+              @click="toggleMomentLike(m)"
+            >{{ m.liked ? '❤️' : '🤍' }} <span>{{ m.likeCount || 0 }}</span></button>
           </div>
         </div>
         <div v-else class="uv-empty slim">TA 还没有动态 🎵</div>
@@ -250,7 +277,9 @@ onMounted(loadUser)
     box-shadow: 0 12px 30px rgba(0, 0, 0, 0.35);
     display: grid; place-items: center;
     font-size: 56px; font-weight: 800; color: var(--ink);
+    overflow: hidden;
   }
+  .uv-avatar-img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; display: block; }
   .uv-avatar-badge {
     position: absolute; right: -6px; bottom: 6px;
     font-style: normal; font-size: 12px; font-weight: 900; letter-spacing: .5px;
@@ -324,11 +353,20 @@ onMounted(loadUser)
   .uv-block-title { font-size: 16px; font-weight: 800; color: var(--ink); margin-bottom: 14px; display: flex; align-items: center; gap: 8px; }
   .uv-block-title em { font-style: normal; font-size: 12px; font-weight: 700; color: #8a94a6; }
 
-  .uv-moment { display: flex; gap: 14px; padding: 14px 0; border-bottom: 1px solid #f0f4fa; }
+  .uv-moment { display: flex; gap: 14px; align-items: flex-start; padding: 14px 0; border-bottom: 1px solid #f0f4fa; }
   .uv-moment:last-child { border-bottom: 0; }
   .uv-moment-ico { flex: none; width: 44px; height: 44px; border-radius: 12px; background: #eef5ff; display: grid; place-items: center; font-size: 22px; }
-  .uv-moment-body p { font-size: 13.5px; color: #2d3748; line-height: 1.6; }
+  .uv-moment-body { flex: 1; min-width: 0; }
+  .uv-moment-body p { font-size: 13.5px; color: #2d3748; line-height: 1.6; word-break: break-word; }
   .uv-moment-time { font-size: 12px; color: #9aa5b5; margin-top: 4px; display: block; }
+  .uv-moment-like {
+    display: inline-flex; align-items: center; gap: 4px; flex: none;
+    border: 1px solid #f0d5da; background: #fff; border-radius: 999px;
+    padding: 5px 10px; font-size: 12px; cursor: pointer; transition: background .15s, transform .15s;
+  }
+  .uv-moment-like span { color: #9aa5b5; font-weight: 700; }
+  .uv-moment-like:hover { background: #fff0f3; transform: translateY(-1px); }
+  .uv-moment-like.on { background: #ffe9ee; border-color: #ffb3c1; }
 
   .uv-foot { max-width: 1200px; margin: 0 auto; padding: 8px 34px 0; display: flex; gap: 16px; }
   .uv-foot-link { font-size: 13px; font-weight: 700; color: #0b7efc; text-decoration: none; }

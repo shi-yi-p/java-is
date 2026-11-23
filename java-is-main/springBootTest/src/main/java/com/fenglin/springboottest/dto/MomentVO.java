@@ -26,4 +26,10 @@ public class MomentVO {
 
     /** 发布时间 */
     private String createTime;
+
+    /** 点赞数 */
+    private Integer likeCount;
+
+    /** 当前查看者是否已点赞 */
+    private Boolean liked;
 }

@@ -3,7 +3,10 @@ package com.fenglin.springboottest.config;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
+import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
+
+import java.nio.file.Path;
 
 /**
  * 注册 JWT 拦截器：对受保护接口（/api/me、/api/profile/**、/api/social/**、/api/feedback/**）生效，
@@ -20,5 +23,13 @@ public class WebConfig implements WebMvcConfigurer {
         registry.addInterceptor(jwtInterceptor)
                 .addPathPatterns("/api/me", "/api/profile/**", "/api/social/**", "/api/feedback/**")
                 .excludePathPatterns("/api/register", "/api/login");
+    }
+
+    /** 上传的头像等静态文件：/uploads/** -> 项目根目录下 uploads/ */
+    @Override
+    public void addResourceHandlers(ResourceHandlerRegistry registry) {
+        String dir = Path.of(System.getProperty("user.dir"), "uploads")
+                .toAbsolutePath().normalize().toUri().toString();
+        registry.addResourceHandler("/uploads/**").addResourceLocations(dir);
     }
 }

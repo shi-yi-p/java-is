@@ -2,23 +2,30 @@ package com.fenglin.springboottest.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.fenglin.springboottest.dto.ChartVO;
+import com.fenglin.springboottest.dto.DailyTopSongVO;
 import com.fenglin.springboottest.entity.Audiobook;
 import com.fenglin.springboottest.entity.Chart;
 import com.fenglin.springboottest.entity.ChartSong;
 import com.fenglin.springboottest.entity.Channel;
 import com.fenglin.springboottest.entity.Playlist;
 import com.fenglin.springboottest.entity.Singer;
+import com.fenglin.springboottest.entity.Song;
 import com.fenglin.springboottest.mapper.AudiobookMapper;
 import com.fenglin.springboottest.mapper.ChartMapper;
 import com.fenglin.springboottest.mapper.ChartSongMapper;
 import com.fenglin.springboottest.mapper.ChannelMapper;
+import com.fenglin.springboottest.mapper.PlayHistoryMapper;
 import com.fenglin.springboottest.mapper.PlaylistMapper;
 import com.fenglin.springboottest.mapper.SingerMapper;
+import com.fenglin.springboottest.mapper.SongMapper;
 import com.fenglin.springboottest.service.HomeService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 /**
  * 首页内容服务实现
@@ -43,6 +50,12 @@ public class HomeServiceImpl implements HomeService {
 
     @Autowired
     private SingerMapper singerMapper;
+
+    @Autowired
+    private PlayHistoryMapper playHistoryMapper;
+
+    @Autowired
+    private SongMapper songMapper;
 
     @Override
     public List<Playlist> playlists() {
@@ -83,6 +96,33 @@ public class HomeServiceImpl implements HomeService {
                 new LambdaQueryWrapper<Singer>()
                         .eq(hasText(tab), Singer::getTab, tab)
                         .orderByAsc(Singer::getSortOrder));
+    }
+
+    @Override
+    public List<DailyTopSongVO> dailyTopSongs() {
+        List<DailyTopSongVO> list = playHistoryMapper.dailyTopSongs(5);
+        List<DailyTopSongVO> result = list == null ? new ArrayList<>() : new ArrayList<>(list);
+        // 当日播放记录不足 5 首时，用累计播放量最高的歌曲补齐，保证轮播始终有 5 首
+        if (result.size() < 5) {
+            Set<Long> exists = new HashSet<>();
+            result.forEach(s -> exists.add(s.getId()));
+            List<Song> fallback = songMapper.selectList(
+                    new LambdaQueryWrapper<Song>().orderByDesc(Song::getPlays));
+            for (Song s : fallback) {
+                if (result.size() >= 5) break;
+                if (exists.contains(s.getId())) continue;
+                DailyTopSongVO vo = new DailyTopSongVO();
+                vo.setId(s.getId());
+                vo.setTitle(s.getTitle());
+                vo.setArtist(s.getArtist());
+                vo.setAlbum(s.getAlbum());
+                vo.setDuration(s.getDuration());
+                vo.setDailyPlays(0L);
+                vo.setTotalPlays(s.getPlays() == null ? 0L : s.getPlays());
+                result.add(vo);
+            }
+        }
+        return result;
     }
 
     /** 查询某个榜单下的歌曲，按名次升序 */

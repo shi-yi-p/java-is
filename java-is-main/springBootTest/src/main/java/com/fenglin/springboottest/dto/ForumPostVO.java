@@ -13,6 +13,10 @@ public class ForumPostVO {
     private String title;
     private String content;
     private String category;
+
+    /** 发帖省份 */
+    private String province;
+
     private long likes;
     private long comments;
     private long views;

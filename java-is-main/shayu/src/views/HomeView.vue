@@ -78,18 +78,31 @@ function goPage(p) {
   else applyPage()
 }
 
-/* ============ Banner 轮播（纯样式占位，后续接后端数据） ============ */
-const banners = [
-  { title: '深海新歌 · 全网首发', sub: '鲨鱼音乐 KU 剧上新', tone: 'b1' },
-  { title: '潮汐 LIVE 现场', sub: '热门歌手巡回直播', tone: 'b2' },
-  { title: '夏日冲浪歌单', sub: '每周精选 · 持续更新', tone: 'b3' }
-]
+/* ============ Banner 轮播：每日播放量 TOP5 歌曲（后端 /api/home/daily-top） ============ */
+const dailyTop = ref([])
+const banners = computed(() => dailyTop.value.map((s, i) => ({
+  title: s.title || '未知歌曲',
+  sub: (s.artist || '未知歌手') + ' · 今日播放 ' + (s.dailyPlays || 0) + ' 次',
+  tone: 'b' + ((i % 3) + 1),
+  rank: i + 1,
+  song: s
+})))
 const activeBanner = ref(0)
+/* 当前 banner：取模兜底，避免数据刷新瞬间越界 */
+const currentBanner = computed(() =>
+  banners.value.length ? banners.value[activeBanner.value % banners.value.length] : null
+)
 let bannerTimer = null
-onMounted(() => {
+onMounted(async () => {
   bannerTimer = setInterval(() => {
-    activeBanner.value = (activeBanner.value + 1) % banners.length
+    if (!banners.value.length) return
+    activeBanner.value = (activeBanner.value + 1) % banners.value.length
   }, 4000)
+  try {
+    const res = await fetch(API + '/api/home/daily-top')
+    const d = await res.json().catch(() => ({}))
+    dailyTop.value = (res.ok && Array.isArray(d.data)) ? d.data : []
+  } catch (e) { dailyTop.value = [] }
 })
 onUnmounted(() => { if (bannerTimer) clearInterval(bannerTimer) })
 
@@ -596,14 +609,16 @@ function goProfile() {
          ============================================================ -->
     <template v-if="page === 'home'">
 
-    <!-- ================= Banner 轮播 ================= -->
-    <section class="kg-banner" :class="banners[activeBanner].tone">
+    <!-- ================= Banner 轮播：每日播放量 TOP5，点击播放 ================= -->
+    <section v-if="currentBanner" class="kg-banner" :class="currentBanner.tone" @click="playTrack(currentBanner.song, dailyTop)">
+      <div class="kg-banner-rank">TOP {{ currentBanner.rank }}</div>
       <div class="kg-banner-text">
-        <em>新歌首发</em>
-        <h2>{{ banners[activeBanner].title }}</h2>
-        <p>{{ banners[activeBanner].sub }}</p>
+        <em>每日热播</em>
+        <h2>{{ currentBanner.title }}</h2>
+        <p>{{ currentBanner.sub }}</p>
+        <span class="kg-banner-play">▶ 点击播放</span>
       </div>
-      <div class="kg-banner-dots">
+      <div class="kg-banner-dots" @click.stop>
         <i
           v-for="(b, i) in banners"
           :key="i"
@@ -1131,7 +1146,20 @@ function goProfile() {
   .kg-banner.b1 { background: linear-gradient(105deg, #101418 0%, #1d2733 55%, #0b3a75 100%); }
   .kg-banner.b2 { background: linear-gradient(105deg, #101418 0%, #2a1d33 55%, #5b21b6 100%); }
   .kg-banner.b3 { background: linear-gradient(105deg, #101418 0%, #1d3327 55%, #0e7490 100%); }
+  .kg-banner { cursor: pointer; }
+  .kg-banner-rank {
+    position: absolute; right: max(60px, calc((100vw - 1200px) / 2 + 30px)); top: 50%;
+    transform: translateY(-50%); font-size: 58px; font-weight: 900; letter-spacing: 2px;
+    color: rgba(255, 255, 255, 0.14); pointer-events: none;
+  }
   .kg-banner-text { color: #fff; }
+  .kg-banner-play {
+    display: inline-block; margin-top: 14px; font-size: 12.5px; font-weight: 800;
+    color: #fff; background: rgba(255, 255, 255, 0.16);
+    border: 1px solid rgba(255, 255, 255, 0.5); border-radius: 999px;
+    padding: 6px 16px; transition: background 0.2s ease;
+  }
+  .kg-banner:hover .kg-banner-play { background: rgba(255, 255, 255, 0.3); }
   .kg-banner-text em {
     font-style: normal; font-size: 12px; letter-spacing: 3px;
     color: #f5c86a; font-weight: 800;

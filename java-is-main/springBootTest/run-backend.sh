@@ -30,18 +30,27 @@ done
 MVN_HOME=""
 CLASSWORLDS_JAR=""
 if [ -n "$DIST_BASE" ]; then
-  # 先按版本匹配：apache-maven-<ver>/<hash>/boot/plexus-classworlds-*.jar
-  for d in "$DIST_BASE"/apache-maven-"$MVN_VER"/*/; do
-    JAR="$(ls "${d}"boot/plexus-classworlds-*.jar 2>/dev/null | head -1)"
-    if [ -n "$JAR" ]; then MVN_HOME="${d%/}"; CLASSWORLDS_JAR="$JAR"; break; fi
-  done
-  # 兜底：扫描所有 apache-maven-* 发行版
-  if [ -z "$MVN_HOME" ]; then
-    for d in "$DIST_BASE"/apache-maven-*/*/; do
-      JAR="$(ls "${d}"boot/plexus-classworlds-*.jar 2>/dev/null | head -1)"
-      if [ -n "$JAR" ]; then MVN_HOME="${d%/}"; CLASSWORLDS_JAR="$JAR"; break; fi
+  # 兼容两种布局：
+  #   旧：apache-maven-<ver>/<hash>/boot/plexus-classworlds-*.jar
+  #   新：apache-maven-<ver>-bin/<hash>/apache-maven-<ver>/boot/plexus-classworlds-*.jar
+  # 同时兼容目录名带 -bin 后缀（maven-wrapper 3.3.x 的默认行为）。
+  find_mvn() {
+    local pattern="$1"
+    local d c JAR
+    for d in $pattern; do
+      for c in "$d" "$d"apache-maven-*/; do
+        JAR="$(ls "${c}"boot/plexus-classworlds-*.jar 2>/dev/null | head -1)"
+        if [ -n "$JAR" ]; then
+          MVN_HOME="${c%/}"
+          CLASSWORLDS_JAR="$JAR"
+          return 0
+        fi
+      done
     done
-  fi
+    return 1
+  }
+  # 先按版本匹配，再兜底扫描所有发行版
+  find_mvn "$DIST_BASE/apache-maven-$MVN_VER"*/*/ || find_mvn "$DIST_BASE"/apache-maven-*/*/ || true
 fi
 
 if [ -z "$MVN_HOME" ] || [ ! -f "$CLASSWORLDS_JAR" ]; then

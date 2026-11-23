@@ -64,6 +64,13 @@ function onDown(e) {
   seek(ratioToSec(e, track))
 }
 
+function openQueue() {
+  player.open = true
+  try {
+    window.dispatchEvent(new CustomEvent('shark-toast', { detail: '播放队列共 ' + player.queue.length + ' 首 📋' }))
+  } catch (e) {}
+}
+
 function closeBar() {
   player.open = false
   try { window.dispatchEvent(new CustomEvent('shark-toast', { detail: '已收起播放器 🎧' })) } catch (e) {}
@@ -102,9 +109,12 @@ function closeBar() {
       <span class="pb-time">{{ fmtTime(player.duration) }}</span>
     </div>
 
-    <!-- 收藏 / 展开 / 收起 -->
+    <!-- 收藏 / 播放队列 / 展开 / 收起 -->
     <div class="pb-extra">
       <button class="pb-btn small" type="button" :title="fav ? '取消收藏' : '收藏'" :class="{ on: fav }" @click="onFav">{{ fav ? '❤️' : '🤍' }}</button>
+      <button class="pb-btn small pb-queue-btn" type="button" :title="'播放队列（' + player.queue.length + ' 首）'" @click="openQueue">
+        📋<span v-if="player.queue.length" class="pb-queue-badge">{{ player.queue.length }}</span>
+      </button>
       <button class="pb-btn small" type="button" title="展开正在播放" @click="player.open = true" v-if="!player.open">⤢</button>
       <button class="pb-btn small" type="button" title="收起" @click="closeBar" v-else>✕</button>
     </div>
@@ -199,6 +209,12 @@ function closeBar() {
 
   .pb-extra { flex: none; display: flex; gap: 6px; }
   .pb-extra .pb-btn.on { background: rgba(255, 154, 160, 0.25); }
+  .pb-queue-btn { position: relative; }
+  .pb-queue-badge {
+    position: absolute; top: -5px; right: -5px; min-width: 15px; height: 15px;
+    padding: 0 3px; border-radius: 999px; background: #0b7efc; color: #fff;
+    font-size: 9px; font-weight: 800; line-height: 15px; text-align: center;
+  }
 
   @media (max-width: 940px) {
     .pb-bar { gap: 12px; padding: 0 14px; }

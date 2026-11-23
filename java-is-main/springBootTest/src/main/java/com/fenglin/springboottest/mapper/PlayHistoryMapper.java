@@ -1,6 +1,7 @@
 package com.fenglin.springboottest.mapper;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import com.fenglin.springboottest.dto.DailyTopSongVO;
 import com.fenglin.springboottest.dto.ListenAgg;
 import com.fenglin.springboottest.dto.SongListenStat;
 import com.fenglin.springboottest.entity.PlayHistory;
@@ -38,4 +39,16 @@ public interface PlayHistoryMapper extends BaseMapper<PlayHistory> {
             "WHERE h.user_id = #{userId} AND h.deleted = 0 " +
             "GROUP BY h.song_id, s.title, s.artist ORDER BY totalSeconds DESC")
     List<SongListenStat> songListenStats(@Param("userId") Long userId);
+
+    /**
+     * 统计当日（数据库 CURDATE()）播放次数最多的歌曲，供首页轮播使用。
+     * 返回列与 DailyTopSongVO 字段一致，按当日播放次数降序、累计播放量降序。
+     */
+    @Select("SELECT s.id AS id, s.title AS title, s.artist AS artist, s.album AS album, " +
+            "s.duration AS duration, COUNT(*) AS dailyPlays, COALESCE(s.plays, 0) AS totalPlays " +
+            "FROM play_history h JOIN song s ON s.id = h.song_id " +
+            "WHERE h.deleted = 0 AND s.deleted = 0 AND h.played_at >= CURDATE() " +
+            "GROUP BY s.id, s.title, s.artist, s.album, s.duration, s.plays " +
+            "ORDER BY dailyPlays DESC, totalPlays DESC LIMIT #{limit}")
+    List<DailyTopSongVO> dailyTopSongs(@Param("limit") int limit);
 }

@@ -102,6 +102,35 @@ public interface ProfileService {
     List<MomentVO> moments(Long userId);
 
     /**
+     * 动态列表（按时间倒序），带当前查看者的点赞状态
+     *
+     * @param userId   被查看者 id
+     * @param viewerId 当前查看者 id（用于判断 liked）
+     */
+    List<MomentVO> moments(Long userId, Long viewerId);
+
+    /**
+     * 点赞 / 取消点赞动态（切换）
+     *
+     * @return true 点赞成功；false 取消点赞；null 动态不存在
+     */
+    Boolean toggleMomentLike(Long userId, Long momentId);
+
+    /**
+     * 自主发布动态（type=post）
+     *
+     * @return 发布后的动态；内容为空返回 null
+     */
+    MomentVO publishMoment(Long userId, String content);
+
+    /**
+     * 删除自己的动态（仅能删自己的）
+     *
+     * @return true 删除成功；false 动态不存在或不属于该用户
+     */
+    boolean deleteMoment(Long userId, Long momentId);
+
+    /**
      * 听歌总排名榜：统计所有用户累计听歌时长，按时长降序。
      */
     List<RankUserVO> listenRanking();
@@ -140,4 +169,25 @@ public interface ProfileService {
      * @return true 删除成功；false 不存在或不属于该用户
      */
     boolean deletePlaylist(Long userId, Long playlistId);
+
+    /**
+     * 歌单内的歌曲列表（仅能读自己的歌单）
+     *
+     * @return 歌曲列表；歌单不存在/不属于该用户返回 null
+     */
+    List<com.fenglin.springboottest.entity.Song> playlistSongs(Long userId, Long playlistId);
+
+    /**
+     * 往歌单添加歌曲
+     *
+     * @return 1 添加成功；0 歌曲已在歌单中；-1 歌单不存在/不属于该用户
+     */
+    int addPlaylistSong(Long userId, Long playlistId, Long songId);
+
+    /**
+     * 从歌单移除歌曲
+     *
+     * @return true 删除成功或本就不存在；false 歌单不属于该用户
+     */
+    boolean removePlaylistSong(Long userId, Long playlistId, Long songId);
 }

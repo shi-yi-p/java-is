@@ -2,6 +2,7 @@ package com.fenglin.springboottest.controller;
 
 import com.fenglin.springboottest.common.Result;
 import com.fenglin.springboottest.dto.ChartVO;
+import com.fenglin.springboottest.dto.DailyTopSongVO;
 import com.fenglin.springboottest.entity.Audiobook;
 import com.fenglin.springboottest.entity.Channel;
 import com.fenglin.springboottest.entity.Playlist;
@@ -54,5 +55,11 @@ public class HomeController {
     @GetMapping("/singers")
     public Result<List<Singer>> singers(@RequestParam(required = false) String tab) {
         return Result.ok("热门歌手", homeService.singers(tab));
+    }
+
+    /** 首页轮播：当日播放量最多的 5 首歌曲 */
+    @GetMapping("/daily-top")
+    public Result<List<DailyTopSongVO>> dailyTop() {
+        return Result.ok("每日热播 TOP5", homeService.dailyTopSongs());
     }
 }

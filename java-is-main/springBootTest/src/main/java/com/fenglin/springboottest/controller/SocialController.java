@@ -53,13 +53,14 @@ public class SocialController {
         String title = body.get("title");
         String content = body.get("content");
         String category = body.get("category");
+        String province = body.get("province");
         if (title == null || title.trim().isEmpty()) {
             return Result.fail(400, "标题不能为空");
         }
         if (content == null || content.trim().isEmpty()) {
             return Result.fail(400, "内容不能为空");
         }
-        return Result.ok("发帖成功", socialService.createPost(uid, title.trim(), content.trim(), category));
+        return Result.ok("发帖成功", socialService.createPost(uid, title.trim(), content.trim(), category, province));
     }
 
     @PostMapping("/post/like")
