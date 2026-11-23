@@ -95,6 +95,29 @@
 			<version>0.12.6</version>
 			<scope>runtime</scope>
 		</dependency>
+
+		<!-- JAVE2：Java 调用 ffmpeg 的封装，内嵌二进制，无需本机安装 ffmpeg。
+		     用于将 StreamController 合成的 WAV 真正编码为 MP3 音源。 -->
+		<dependency>
+			<groupId>ws.schild</groupId>
+			<artifactId>jave-core</artifactId>
+			<version>3.6.0</version>
+		</dependency>
+		<!-- 按部署平台二选一/都保留：Windows x64 与 Linux x64 的 ffmpeg 二进制 -->
+		<dependency>
+			<groupId>ws.schild</groupId>
+			<artifactId>jave-nativebin-win64</artifactId>
+			<version>3.6.0</version>
+		</dependency>
+		<dependency>
+			<groupId>ws.schild</groupId>
+			<artifactId>jave-nativebin-linux64</artifactId>
+			<version>3.6.0</version>
+		</dependency>
+		<dependency>
+			<groupId>org.slf4j</groupId>
+			<artifactId>slf4j-api</artifactId>
+		</dependency>
 	</dependencies>
 
 	<build>

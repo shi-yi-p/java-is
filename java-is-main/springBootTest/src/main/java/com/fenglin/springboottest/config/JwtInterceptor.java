@@ -56,6 +56,10 @@ public class JwtInterceptor implements HandlerInterceptor {
     private void writeUnauthorized(HttpServletResponse response, String message) throws Exception {
         response.setStatus(HttpStatus.UNAUTHORIZED.value());
         response.setContentType("application/json;charset=UTF-8");
-        response.getWriter().write("{\"code\":401,\"message\":\"" + message + "\"}");
+        // 结构化写出，避免 message 拼接导致 JSON 非法或注入
+        response.getWriter().write(
+                "{\"code\":401,\"message\":\""
+                        + message.replace("\\", "\\\\").replace("\"", "\\\"")
+                        + "\"}");
     }
 }

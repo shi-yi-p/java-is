@@ -94,6 +94,18 @@ const MODULES = [
     { k: 'account', label: '账户' },
     { k: 'nickname', label: '昵称' },
     { k: 'createTime', label: '注册时间', readonly: true }
+  ]},
+  { key: 'feedback', name: '意见反馈', icon: '📮', readonly: true, fields: [
+    { k: 'userId', label: '用户ID', readonly: true },
+    { k: 'type', label: '类型', type: 'select', options: [
+      { v: 'bug', t: '🐛 问题反馈' }, { v: 'suggestion', t: '💡 功能建议' },
+      { v: 'music', t: '🎵 音乐内容' }, { v: 'other', t: '📮 其他' }
+    ]},
+    { k: 'content', label: '反馈内容' },
+    { k: 'contact', label: '联系方式' },
+    { k: 'status', label: '状态', type: 'select', options: [{ v: 0, t: '待处理' }, { v: 1, t: '已处理' }] },
+    { k: 'reply', label: '官方回复' },
+    { k: 'createTime', label: '提交时间', readonly: true }
   ]}
 ]
 
@@ -264,6 +276,16 @@ function fmtDate(s) {
   return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate()) + ' ' + p(d.getHours()) + ':' + p(d.getMinutes())
 }
 
+/** 表格单元格显示：select 字段显示选项中文标签，其余按原逻辑 */
+function cellText(f, row) {
+  const v = row[f.k]
+  if (f.type === 'select' && Array.isArray(f.options)) {
+    const opt = f.options.find(o => String(o.v) === String(v))
+    if (opt) return opt.t
+  }
+  return v == null ? '' : String(v)
+}
+
 onMounted(loadList)
 </script>
 
@@ -296,7 +318,7 @@ onMounted(loadList)
       <main class="admin-main">
         <div class="admin-head">
           <h2>{{ activeModule.name }}管理</h2>
-          <button class="admin-add" @click="openCreate">＋ 新增{{ activeModule.name }}</button>
+          <button v-if="!activeModule.readonly" class="admin-add" @click="openCreate">＋ 新增{{ activeModule.name }}</button>
         </div>
 
         <div class="admin-table-wrap">
@@ -312,16 +334,16 @@ onMounted(loadList)
                 <td v-for="f in activeModule.fields" :key="f.k">
                   <span v-if="f.type === 'number'">{{ fmtNum(row[f.k]) }}</span>
                   <span v-else-if="f.k === 'createTime'">{{ fmtDate(row[f.k]) }}</span>
-                  <span v-else>{{ row[f.k] }}</span>
+                  <span v-else>{{ cellText(f, row) }}</span>
                 </td>
                 <td class="op">
                   <button class="lnk" @click="openEdit(row)">编辑</button>
-                  <button class="lnk del" @click="remove(row)">删除</button>
+                  <button v-if="!activeModule.readonly" class="lnk del" @click="remove(row)">删除</button>
                   <button v-if="activeKey === 'chart'" class="lnk song" @click="openSongs(row)">歌曲</button>
                 </td>
               </tr>
               <tr v-if="!rows.length">
-                <td :colspan="activeModule.fields.length + 1" class="empty">暂无数据，点击右上角「新增」添加一条吧～</td>
+                <td :colspan="activeModule.fields.length + 1" class="empty">{{ activeModule.readonly ? '暂无反馈数据～' : '暂无数据，点击右上角「新增」添加一条吧～' }}</td>
               </tr>
             </tbody>
           </table>

@@ -56,3 +56,31 @@ INSERT IGNORE INTO `song` (`id`, `title`, `artist`, `album`, `duration`, `plays`
   (28, '平流层放风筝',   '星野次郎',     '夜行列车',     216,  154000),
   (29, '自习室摇椅',     '打工人合唱团', '格子间战歌',   171,  426000),
   (30, '蓝色隧道',       '鲸落Koi',      '深海回响',     321,  702000);
+
+-- 2.1) 幂等补列：Song 实体含 lyric 字段，早期建表脚本漏列，
+--      会导致全字段查询 song 的接口报 Unknown column 'lyric'。列已存在则自动跳过。
+SET @lyric_exists = (
+  SELECT COUNT(*) FROM information_schema.COLUMNS
+  WHERE TABLE_SCHEMA = 'shark_music'
+    AND TABLE_NAME = 'song'
+    AND COLUMN_NAME = 'lyric'
+);
+SET @lyric_sql = IF(@lyric_exists = 0,
+  'ALTER TABLE `song` ADD COLUMN `lyric` TEXT NULL COMMENT ''LRC 歌词（原创，带时间戳，空则前端无歌词）'' AFTER `url`;',
+  'SELECT ''song.lyric 列已存在，跳过'' AS info;'
+);
+PREPARE lyric_stmt FROM @lyric_sql;
+EXECUTE lyric_stmt;
+DEALLOCATE PREPARE lyric_stmt;
+
+-- 2.2) 补齐热门歌手中原本无作品的 4 位（波浪少女组/Luna Tide/Ocean Kids/Vinyl Brothers），
+--      每位 2 首，使其主页有作品可展示。INSERT IGNORE 保证重复执行不会产生重复行。
+INSERT IGNORE INTO `song` (`id`, `title`, `artist`, `album`, `duration`, `plays`) VALUES
+  (31, '浪花圆舞曲',     '波浪少女组',   '潮汐日记',     214,  1860000),
+  (32, '海边的便利店',   '波浪少女组',   '潮汐日记',     198,   940000),
+  (33, 'Moonlight Pier', 'Luna Tide',    'Silver Tide',  246,  3120000),
+  (34, 'Neon Harbor',    'Luna Tide',    'Silver Tide',  231,  1280000),
+  (35, 'Bubble Parade',  'Ocean Kids',   'Sunny Reef',   175,  760000),
+  (36, 'Little Submarine','Ocean Kids',  'Sunny Reef',   188,  520000),
+  (37, 'Analog Sunset',  'Vinyl Brothers','Side B',      263,  1100000),
+  (38, 'Tape Loop',      'Vinyl Brothers','Side B',      209,  680000);

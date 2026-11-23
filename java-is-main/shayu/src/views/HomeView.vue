@@ -47,7 +47,7 @@ const helloName = computed(() => nickname.value || '鲨鲨乐迷')
 
 /* ============ 顶栏 / 导航 ============ */
 const topLinks = ['音乐人', '声播创作', 'VIP会员']
-const navItems = ['首页', '榜单', '听书', '直播', '听歌总榜', '论坛', '下载鲨鱼', '商务合作', '更多']
+const navItems = ['首页', '榜单', '听书', '直播', '听歌总榜', '论坛', '下载鲨鱼', '更多']
 
 /* ============ 子页面：首页 / 榜单 / 听书 / 直播（由 hash 驱动，支持浏览器前进后退）============ */
 const PAGE_ROUTES = ['rank', 'audiobook', 'live']
@@ -389,9 +389,15 @@ function chartSubtitle(hc) {
   return songs.length + ' 首 · ' + (top ? '榜首《' + top + '》' : '待更新')
 }
 
-/* ================= 信息弹窗（音乐人 / 声播 / VIP / 商务合作 / 更多）================= */
+/* ================= 信息弹窗（音乐人 / 声播 / VIP / 更多）================= */
 const info = ref({ open: false, title: '', body: '' })
 function openInfo(title, body) { info.value = { open: true, title, body } }
+
+/* 点击热门歌手 → 进入歌手主页（#/singer/<id>） */
+function openSinger(s) {
+  if (!s || !s.id) return
+  location.hash = '#/singer/' + s.id
+}
 function closeInfo() { info.value.open = false }
 
 /* ================= 导航：榜单 / 听书 → 独立页面；直播 / 下载 → 首页内定位 ================= */
@@ -422,9 +428,6 @@ function goNav(n) {
   /* 论坛：独立页面 */
   if (n === '论坛') { location.hash = '#/forum'; return }
 
-  /* 商务合作：弹窗 */
-  if (n === '商务合作') { openInfo('商务合作', '商务 / 媒体 / 版权合作请联系：\n\nbiz@sharkmusic.demo\n\n（演示项目）'); return }
-
   /* 下载鲨鱼：需要先回到首页再滚动定位 */
   const id = { '下载鲨鱼': 'sec-download' }[n]
   if (!id) return
@@ -445,7 +448,7 @@ function openTop(l) {
 
 function openMoreItem(m) {
   moreOpen.value = false
-  if (m === '意见反馈') return openInfo('意见反馈', '欢迎反馈问题与建议：feedback@sharkmusic.demo\n\n（演示）')
+  if (m === '意见反馈') { location.hash = '#/feedback'; return }
   if (m === '关于鲨鱼音乐') return openInfo('关于鲨鱼音乐', '鲨鱼音乐 · SHARK MUSIC\n基于 Vue3 + Spring Boot + MySQL 的演示音乐站。')
   openTop(m)
 }
@@ -658,7 +661,7 @@ function goProfile() {
         <a href="#" @click.prevent="coming('歌手库')">更多 ›</a>
       </h3>
       <div v-if="singers.length" class="kg-singers">
-        <div v-for="s in singers" :key="s.id" class="kg-singer" @click="openInfo(s.name, fmtPlays(s.fans) + ' 粉丝 · 关注 TA（演示歌手）')">
+        <div v-for="s in singers" :key="s.id" class="kg-singer" @click="openSinger(s)">
           <span class="kg-singer-ava" :class="s.tone">{{ s.name.slice(0, 1) }}</span>
           <b class="kg-singer-name">{{ s.name }}</b>
           <span class="kg-singer-fans">{{ fmtPlays(s.fans) }} 粉丝</span>
@@ -907,7 +910,7 @@ function goProfile() {
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 15l6-6 6 6"/></svg>
   </button>
 
-  <!-- ================= 信息弹窗（音乐人/声播/VIP/商务合作等）================= -->
+  <!-- ================= 信息弹窗（音乐人/声播/VIP 等）================= -->
   <div v-if="info.open" class="kg-modal-mask" @click.self="closeInfo">
     <div class="kg-modal">
       <div class="kg-modal-head">

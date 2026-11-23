@@ -9,6 +9,7 @@ import com.fenglin.springboottest.entity.Audiobook;
 import com.fenglin.springboottest.entity.Channel;
 import com.fenglin.springboottest.entity.Chart;
 import com.fenglin.springboottest.entity.ChartSong;
+import com.fenglin.springboottest.entity.Feedback;
 import com.fenglin.springboottest.entity.Playlist;
 import com.fenglin.springboottest.entity.Singer;
 import com.fenglin.springboottest.entity.Song;
@@ -58,6 +59,7 @@ public class AdminController {
     @Autowired private AudiobookMapper audiobookMapper;
     @Autowired private ChartSongMapper chartSongMapper;
     @Autowired private UserMapper userMapper;
+    @Autowired private com.fenglin.springboottest.mapper.FeedbackMapper feedbackMapper;
 
     @Autowired private JwtUtil jwtUtil;
 
@@ -123,6 +125,7 @@ public class AdminController {
             case "singer"     -> new Meta(singerMapper, Singer.class, "sort_order,id");
             case "channel"    -> new Meta(channelMapper, Channel.class, "sort_order,id");
             case "audiobook"  -> new Meta(audiobookMapper, Audiobook.class, "sort_order,id");
+            case "feedback"   -> new Meta(feedbackMapper, Feedback.class, "id");
             default           -> null;
         };
     }
@@ -211,7 +214,12 @@ public class AdminController {
         Meta m = meta(type);
         if (m == null) return ResponseEntity.badRequest().body(Result.fail(400, "未知的数据类型：" + type));
         QueryWrapper<Object> qw = new QueryWrapper<>();
-        for (String col : m.orderBy.split(",")) qw.orderByAsc(col.trim());
+        if ("feedback".equals(type)) {
+            // 反馈按提交时间倒序，最新的排最前
+            qw.orderByDesc("create_time");
+        } else {
+            for (String col : m.orderBy.split(",")) qw.orderByAsc(col.trim());
+        }
         return ResponseEntity.ok(Result.ok("列表", m.mapper.selectList(qw)));
     }
 

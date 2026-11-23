@@ -1,8 +1,9 @@
 package com.fenglin.springboottest.controller;
 
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.fenglin.springboottest.entity.Song;
 import com.fenglin.springboottest.mapper.SongMapper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -13,22 +14,28 @@ import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import ws.schild.jave.Encoder;
+import ws.schild.jave.MultimediaObject;
+import ws.schild.jave.encode.AudioAttributes;
+import ws.schild.jave.encode.EncodingAttributes;
 
-import javax.sound.sampled.AudioFormat;
-import javax.sound.sampled.AudioSystem;
-import javax.sound.sampled.UnsupportedAudioFileException;
-import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Arrays;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.Random;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * 演示用合成音源接口：GET /api/stream?id=xxx
  *
  * 曲库 song 表只有元数据（歌名/歌手/专辑/时长），并无真实音频文件。
  * 为了让播放器「能出声」、进度条真实走动，这里按歌曲 id + 时长合成一段
- * 舒缓的旋律 WAV（每首歌音调随 id 不同而不同），并支持 HTTP Range 请求，
- * 使浏览器 <audio> 可以拖进度、暂停、seek。
+ * 舒缓的旋律，并用 JAVE2（内嵌 ffmpeg）编码为真正的 MP3 输出，
+ * 同时支持 HTTP Range 请求，使浏览器 <audio> 可以拖进度、暂停、seek。
  *
  * 公开接口（不经过 JWT 拦截器）。
  */
@@ -36,14 +43,19 @@ import java.util.Arrays;
 @RequestMapping("/api")
 public class StreamController {
 
-    /** 采样率 22050Hz、单声道、16bit PCM */
+    private static final Logger log = LoggerFactory.getLogger(StreamController.class);
+
+    /** 采样率 22050Hz、单声道、16bit PCM（合成 WAV 阶段） */
     private static final float SAMPLE_RATE = 22050f;
+
+    /** MP3 编码码率：单声道 22050Hz 下 96kbps 足够清晰且体积可控 */
+    private static final int MP3_BIT_RATE = 96000;
 
     /** 单次可合成的最大时长（秒），防止传入超大 duration 撑爆内存 */
     private static final int MAX_SECONDS = 600;
 
-    /** 合成音源缓存：key = seed:seconds → 完整 WAV 字节，避免 seek/重复播放时反复合成 */
-    private final java.util.concurrent.ConcurrentHashMap<String, byte[]> wavCache = new java.util.concurrent.ConcurrentHashMap<>();
+    /** 合成音源缓存：key = seed:seconds → 完整 MP3 字节，避免 seek/重复播放时反复编码 */
+    private final ConcurrentHashMap<String, byte[]> mp3Cache = new ConcurrentHashMap<>();
 
     /** 缓存上限（首数），防止内存无限增长 */
     private static final int MAX_CACHE_ENTRIES = 256;
@@ -52,12 +64,12 @@ public class StreamController {
     private SongMapper songMapper;
 
     /**
-     * 返回歌曲音频，支持 Range: bytes=start-end 请求头。
+     * 返回歌曲音频（MP3），支持 Range: bytes=start-end 请求头。
      *
      * 解析优先级（A+B 方案）：
      *   1) 真实音源：song 表有 url 字段（指向真实 mp3 直链）→ 302 重定向到该地址；
      *   2) 免费公开音源：命中内置「歌名→免费 mp3」映射表 → 302 重定向；
-     *   3) 合成音源：以上都未命中 → 按歌曲 id 合成 WAV 兜底（保证一定能出声）。
+     *   3) 合成音源：以上都未命中 → 按歌曲 id 合成旋律并编码为 MP3 兜底（保证一定能出声）。
      */
     @GetMapping("/stream")
     public ResponseEntity<?> stream(
@@ -96,25 +108,40 @@ public class StreamController {
         // 歌曲标识：有歌用歌的 id，否则用 id 参数，兜底 1
         long seed = (song != null && song.getId() != null) ? song.getId() : (id != null ? id : 1L);
 
-        byte[] wav = cachedWav(seed, seconds);
+        byte[] mp3 = cachedMp3(seed, seconds);
+        if (mp3 != null) {
+            return buildResponse(mp3, range, MediaType.parseMediaType("audio/mpeg"));
+        }
 
-        return buildResponse(wav, range);
+        // MP3 编码异常时降级为合成 WAV，保证播放器仍能出声
+        byte[] wav = synthWav(seed, seconds);
+        return buildResponse(wav, range, MediaType.parseMediaType("audio/wav"));
     }
 
-    /** 带缓存的合成：同一首歌（seed+时长）只合成一次，后续命中缓存 */
-    private byte[] cachedWav(long seed, int seconds) {
+    /** 带缓存的合成+编码：同一首歌（seed+时长）只编码一次，后续命中缓存 */
+    private byte[] cachedMp3(long seed, int seconds) {
         String key = seed + ":" + seconds;
-        byte[] cached = wavCache.get(key);
+        byte[] cached = mp3Cache.get(key);
         if (cached != null) {
             return cached;
         }
         byte[] wav = synthWav(seed, seconds);
-        // 简单容量控制：超过上限时清空缓存，避免内存无限增长
-        if (wavCache.size() >= MAX_CACHE_ENTRIES) {
-            wavCache.clear();
+        byte[] mp3;
+        try {
+            mp3 = encodeMp3(wav);
+        } catch (Exception e) {
+            log.warn("歌曲 {} ({}s) MP3 编码失败，降级为 WAV：{}", seed, seconds, e.getMessage());
+            return null;
         }
-        wavCache.put(key, wav);
-        return wav;
+        if (mp3 == null || mp3.length == 0) {
+            return null;
+        }
+        // 简单容量控制：超过上限时清空缓存，避免内存无限增长
+        if (mp3Cache.size() >= MAX_CACHE_ENTRIES) {
+            mp3Cache.clear();
+        }
+        mp3Cache.put(key, mp3);
+        return mp3;
     }
 
     private boolean hasText(String s) {
@@ -143,7 +170,7 @@ public class StreamController {
         String title = song.getTitle() == null ? "" : song.getTitle().trim();
         String artist = song.getArtist() == null ? "" : song.getArtist().trim();
 
-        java.util.Map<String, String> map = new java.util.LinkedHashMap<>();
+        Map<String, String> map = new LinkedHashMap<>();
         // 示例（未启用）：下方注释掉真实链接占位
         // map.put("潮汐信号", "https://example.com/audio/chaoxi.mp3");
 
@@ -162,13 +189,14 @@ public class StreamController {
     /**
      * 合成 WAV：以 seed 为随机种子的确定性旋律，同一首歌每次生成完全一致。
      * 波形 = 若干正弦波叠加（基音 + 泛音），附缓慢的包络与颤音，听感柔和。
+     * 这是编码为 MP3 前的中间产物。
      */
     private byte[] synthWav(long seed, int seconds) {
         int sampleRate = (int) SAMPLE_RATE;
         int total = sampleRate * seconds;
 
         // 每首歌的音阶种子：根据 seed 从五声音阶里挑一个主音（听起来像东方小调）
-        java.util.Random rand = new java.util.Random(seed);
+        Random rand = new Random(seed);
         double base = 196.0 * Math.pow(2.0, (rand.nextInt(12)) / 12.0); // G3 附近随机主音
         double[] pentatonic = { 0, 2, 4, 7, 9 }; // 五声音阶（半音差）
 
@@ -237,6 +265,34 @@ public class StreamController {
         return out.toByteArray();
     }
 
+    /**
+     * 用 JAVE2（内嵌 ffmpeg）把 WAV 字节真正编码为 MP3。
+     * JAVE2 的编码接口基于文件路径，故先写临时 WAV，编码后读回临时 MP3，最后清理临时文件。
+     */
+    private byte[] encodeMp3(byte[] wav) throws Exception {
+        Path wavFile = Files.createTempFile("shark-synth-", ".wav");
+        Path mp3File = Files.createTempFile("shark-synth-", ".mp3");
+        try {
+            Files.write(wavFile, wav);
+
+            AudioAttributes audio = new AudioAttributes();
+            audio.setCodec("libmp3lame");
+            audio.setBitRate(MP3_BIT_RATE);
+            audio.setChannels(1);
+            audio.setSamplingRate((int) SAMPLE_RATE);
+
+            EncodingAttributes attrs = new EncodingAttributes();
+            attrs.setOutputFormat("mp3");
+            attrs.setAudioAttributes(audio);
+
+            new Encoder().encode(new MultimediaObject(wavFile.toFile()), mp3File.toFile(), attrs);
+            return Files.readAllBytes(mp3File);
+        } finally {
+            try { Files.deleteIfExists(wavFile); } catch (IOException ignored) { }
+            try { Files.deleteIfExists(mp3File); } catch (IOException ignored) { }
+        }
+    }
+
     private void writeIntLE(ByteArrayOutputStream out, int v) {
         out.write(v & 0xFF);
         out.write((v >> 8) & 0xFF);
@@ -250,9 +306,9 @@ public class StreamController {
     }
 
     /** 构造响应，处理 Range 请求（支持拖动进度条） */
-    private ResponseEntity<byte[]> buildResponse(byte[] full, String range) {
+    private ResponseEntity<byte[]> buildResponse(byte[] full, String range, MediaType contentType) {
         HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.parseMediaType("audio/wav"));
+        headers.setContentType(contentType);
         headers.set(HttpHeaders.ACCEPT_RANGES, "bytes");
         headers.set(HttpHeaders.CACHE_CONTROL, "public, max-age=3600");
 
