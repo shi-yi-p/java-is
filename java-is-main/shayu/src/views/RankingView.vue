@@ -108,6 +108,21 @@ function medal(rank) {
   return rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : ''
 }
 
+/* 头像：有真实图片则用图片，加载失败回退首字母 emoji */
+function hasAvatar(u) {
+  const a = (u && u.avatar || '').trim()
+  return /^https?:\/\//i.test(a) || a.startsWith('/')
+}
+function avatarSrc(u) {
+  const a = (u && u.avatar || '').trim()
+  return /^https?:\/\//i.test(a) ? a : (a.startsWith('/') ? a : '')
+}
+function onAvatarError(e, u) {
+  const box = e.target.parentElement
+  if (box) box.classList.add('no-img')
+  e.target.style.display = 'none'
+}
+
 function goHome() { location.hash = '#/home' }
 </script>
 
@@ -142,8 +157,17 @@ function goHome() { location.hash = '#/home' }
             :class="'p' + u.rank"
           >
             <div class="rk-podium-medal">{{ medal(u.rank) }}</div>
-            <span class="rk-podium-ava" @click="goUser(u)" style="cursor:pointer">{{ u.avatarLetter }}</span>
-            <b class="rk-podium-name" @click="goUser(u)" style="cursor:pointer">{{ u.nickname }}</b>
+            <span
+              class="rk-podium-ava ava-box"
+              :class="{ 'no-img': !hasAvatar(u) }"
+              @click="goUser(u)"
+              title="查看主页"
+            >
+              <img v-if="hasAvatar(u)" :src="avatarSrc(u)" :alt="u.nickname" @error="onAvatarError($event, u)">
+              <span v-else class="ava-letter">{{ u.avatarLetter }}</span>
+              <i class="ava-ring"></i>
+            </span>
+            <b class="rk-podium-name" @click="goUser(u)">{{ u.nickname }}</b>
             <span class="rk-podium-dur">{{ fmtDuration(u.listenSeconds) }}</span>
             <span class="rk-podium-level">Lv.{{ u.level }} {{ u.levelName }}</span>
             <div class="rk-podium-actions">
@@ -164,8 +188,11 @@ function goHome() { location.hash = '#/home' }
         <div v-if="ranking.length" class="rk-list">
           <div v-for="u in ranking" :key="u.userId" class="rk-item" :class="{ top: u.rank <= 3 }">
             <span class="rk-rank" :class="'r' + u.rank">{{ u.rank <= 3 ? medal(u.rank) : u.rank }}</span>
-            <span class="rk-ava" @click="goUser(u)" style="cursor:pointer">{{ u.avatarLetter }}</span>
-            <div class="rk-info" @click="goUser(u)" style="cursor:pointer">
+            <span class="rk-ava ava-box" :class="{ 'no-img': !hasAvatar(u) }" @click="goUser(u)" title="查看主页">
+              <img v-if="hasAvatar(u)" :src="avatarSrc(u)" :alt="u.nickname" @error="onAvatarError($event, u)">
+              <span v-else class="ava-letter">{{ u.avatarLetter }}</span>
+            </span>
+            <div class="rk-info" @click="goUser(u)">
               <b>{{ u.nickname }}</b>
               <span>Lv.{{ u.level }} · {{ u.levelName }} · 播放 {{ fmtPlays(u.playCount) }} 次</span>
             </div>
@@ -244,14 +271,32 @@ function goHome() { location.hash = '#/home' }
   .rk-podium-item.p2 { order: 1; }
   .rk-podium-item.p3 { order: 3; }
   .rk-podium-medal { font-size: 36px; }
-  .rk-podium-ava {
-    width: 64px; height: 64px; border-radius: 50%;
-    background: linear-gradient(150deg, var(--shark-blue), var(--shark-blue-deep));
+
+  /* 头像容器：图片铺满 + hover 放大 + 光环 */
+  .ava-box {
+    position: relative; overflow: hidden; cursor: pointer; flex: none;
     display: grid; place-items: center;
-    font-size: 24px; font-weight: 800; color: #fff;
+    transition: transform .18s ease, box-shadow .18s ease;
   }
-  .rk-podium-item.p1 .rk-podium-ava { background: linear-gradient(150deg, #ffd166, #f59e0b); }
-  .rk-podium-name { font-size: 14px; font-weight: 800; color: var(--ink); }
+  .ava-box:hover { transform: scale(1.09); }
+  .ava-box img { width: 100%; height: 100%; object-fit: cover; display: block; border-radius: 50%; }
+  .ava-box .ava-letter { font-size: inherit; font-weight: 800; color: #fff; line-height: 1; }
+  .rk-podium-ava {
+    width: 72px; height: 72px; border-radius: 50%; font-size: 26px;
+    background: linear-gradient(150deg, var(--shark-blue), var(--shark-blue-deep));
+    box-shadow: 0 6px 16px rgba(11,126,252,.28);
+  }
+  .rk-podium-ava.no-img { background: linear-gradient(150deg, var(--shark-blue), var(--shark-blue-deep)); }
+  .rk-podium-item.p1 .rk-podium-ava { background: linear-gradient(150deg, #ffd166, #f59e0b); box-shadow: 0 8px 22px rgba(245,158,11,.5); }
+  .rk-podium-ava .ava-ring {
+    position: absolute; inset: -4px; border-radius: 50%;
+    border: 2px solid rgba(255,255,255,.9);
+    box-shadow: 0 0 0 2px rgba(11,126,252,.25);
+    pointer-events: none;
+  }
+  .rk-podium-item.p1 .rk-podium-ava .ava-ring { box-shadow: 0 0 0 2px rgba(245,158,11,.55); }
+  .rk-podium-name { font-size: 14px; font-weight: 800; color: var(--ink); cursor: pointer; transition: color .15s ease; }
+  .rk-podium-name:hover { color: #0b7efc; }
   .rk-podium-dur { font-size: 12.5px; color: #0b7efc; font-weight: 700; }
   .rk-podium-level { font-size: 11px; color: #9aa5b5; font-weight: 600; }
 
@@ -291,13 +336,14 @@ function goHome() { location.hash = '#/home' }
   }
   .rk-rank.r1, .rk-rank.r2, .rk-rank.r3 { font-size: 20px; }
   .rk-ava {
-    flex: none; width: 42px; height: 42px; border-radius: 50%;
+    width: 46px; height: 46px; border-radius: 50%; font-size: 17px;
     background: linear-gradient(150deg, var(--shark-blue), var(--shark-blue-deep));
-    display: grid; place-items: center;
-    font-size: 16px; font-weight: 800; color: #fff;
+    box-shadow: 0 3px 10px rgba(11,126,252,.2);
   }
-  .rk-info { flex: 1; min-width: 0; }
-  .rk-info b { font-size: 14px; font-weight: 800; color: var(--ink); display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .rk-item.top .rk-ava { box-shadow: 0 3px 12px rgba(245,158,11,.45); }
+  .rk-info { flex: 1; min-width: 0; cursor: pointer; }
+  .rk-info b { font-size: 14px; font-weight: 800; color: var(--ink); display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; transition: color .15s ease; }
+  .rk-info:hover b { color: #0b7efc; }
   .rk-info span { font-size: 12px; color: #9aa5b5; }
   .rk-dur { flex: none; font-size: 14px; font-weight: 800; color: #0b7efc; }
 

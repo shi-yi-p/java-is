@@ -37,6 +37,9 @@ public class Audiobook {
     /** 封面渐变配色编号 p1~p8 */
     private String tone;
 
+    /** 跳转链接（喜马拉雅搜索页） */
+    private String url;
+
     /** 收听量 */
     private Long listens;
 

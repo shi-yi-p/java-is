@@ -28,6 +28,9 @@ public class Channel {
     /** 图标底色渐变编号 p1~p8 */
     private String tone;
 
+    /** 跳转链接（B站直播搜索页） */
+    private String url;
+
     /** 当前在听人数 */
     private Long listeners;
 

@@ -17,8 +17,11 @@ public class ForumCommentVO {
     /** 评论人昵称 */
     private String nickname;
 
-    /** 评论人头像首字母 */
+    /** 评论人头像首字母（无头像时回退展示） */
     private String avatarLetter;
+
+    /** 评论人头像图片路径 */
+    private String avatar;
 
     private String createTime;
 }

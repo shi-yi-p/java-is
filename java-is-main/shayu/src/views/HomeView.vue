@@ -379,9 +379,16 @@ const totalListeners = computed(() =>
   channels.value.reduce((n, c) => n + (Number(c.listeners) || 0), 0)
 )
 
-/* 进入直播间 */
+/* 新窗口跳转到外部平台（听书→喜马拉雅，直播→B站） */
+function openExternal(url, title) {
+  if (!url) { toast('暂无跳转链接'); return }
+  const w = window.open(url, '_blank', 'noopener,noreferrer')
+  if (!w) toast('浏览器拦截了弹窗，请允许本站弹出窗口后重试')
+}
+
+/* 进入直播间：跳转到 B 站直播搜索页 */
 function openLiveRoom(c) {
-  openInfo('🔴 ' + c.name, fmtPlays(c.listeners) + ' 人正在观看\n\n直播间已为你打开（演示）\n主播：' + c.name + ' · 房间号 ' + c.id)
+  openExternal(c.url, c.name)
 }
 
 /* ================= 首页「精选歌单」：展示 4 个热歌榜（抖音/酷狗/QQ/网易云） ================= */
@@ -877,7 +884,8 @@ function goProfile() {
           v-for="b in audiobooks"
           :key="b.id"
           class="kg-book"
-          @click="openInfo('《' + b.title + '》', (b.author || '') + ' · ' + (b.intro || '') + '\n\n收听量：' + fmtPlays(b.listens) + '\n\n（有声书演示）')"
+          :title="'跳转到喜马拉雅搜索：' + b.title"
+          @click="openExternal(b.url, '《' + b.title + '》')"
         >
           <div class="kg-book-cover" :class="b.tone"><span>{{ b.icon }}</span></div>
           <div class="kg-book-info">
@@ -917,6 +925,7 @@ function goProfile() {
           :key="c.id"
           class="kg-live"
           :class="c.tone"
+          :title="'跳转到B站直播搜索：' + c.name"
           @click="openLiveRoom(c)"
         >
           <span class="kg-live-badge"><i></i>LIVE</span>

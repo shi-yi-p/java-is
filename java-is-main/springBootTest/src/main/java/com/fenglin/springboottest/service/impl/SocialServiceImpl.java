@@ -155,6 +155,7 @@ public class SocialServiceImpl implements SocialService {
             String nick = u.getNickname() != null ? u.getNickname() : u.getAccount();
             vo.setNickname(nick);
             vo.setAvatarLetter(nick == null || nick.isEmpty() ? "鲨" : nick.substring(0, 1));
+            vo.setAvatar(u.getAvatar());
         } else {
             vo.setNickname("未知用户");
             vo.setAvatarLetter("鲨");
@@ -175,6 +176,7 @@ public class SocialServiceImpl implements SocialService {
             String nick = u.getNickname() != null ? u.getNickname() : u.getAccount();
             vo.setNickname(nick);
             vo.setAvatarLetter(nick == null || nick.isEmpty() ? "鲨" : nick.substring(0, 1));
+            vo.setAvatar(u.getAvatar());
         } else {
             vo.setNickname("未知用户");
             vo.setAvatarLetter("鲨");

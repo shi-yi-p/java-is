@@ -63,47 +63,22 @@ function playFromQueue(i) {
   if (s) playTrack(s, player.queue)
 }
 
-/* ================= 歌词（演示歌词，按歌曲 id 确定性生成） ================= */
-const LYRICS_POOL = [
-  '晚风把心事吹散在街角',
-  '那些没说出口的，都留给海潮',
-  '若月亮没来，星星也失眠',
-  '把梦折成纸飞机，飞向你的窗',
-  '时间慢一点，让我再靠近一点',
-  '所有的告别，都是为了更好的重逢',
-  '把回忆酿成酒，敬这一路的风',
-  '你是我藏在心底，最温柔的秘密',
-  '逆着风奔跑，也要拥抱明天',
-  '这世界很大，还好我们相遇',
-  '萤火照亮了夏夜，也照亮了想念',
-  '愿你被这世界，温柔以待'
-]
-
-/* 根据歌曲 id 生成确定性的歌词行（同一首歌每次一致）——仅作无真歌词时的兜底 */
-const lyrics = computed(() => {
-  const s = player.song
-  if (!s) return []
-  const seed = Number(s.id) || 1
-  const total = player.duration || Number(s.duration) || 240
-  // 行数：6 ~ 8 行
-  const count = 6 + (seed % 3)
-  const lines = []
-  for (let i = 0; i < count; i++) {
-    const poolIdx = (seed + i * 3) % LYRICS_POOL.length
-    lines.push({ t: (total / count) * i, text: LYRICS_POOL[poolIdx] })
-  }
-  return lines
-})
-
-/* ================= 真实歌词：优先走后端 /api/lyric，命中则覆盖兜底歌词 ================= */
+/* ================= 歌词：只展示后端 /api/lyric 返回的真实 LRC ================= */
+/* 不再编造演示歌词；纯音乐或未提供 LRC 时显示占位提示，避免误导 */
 const realLyrics = ref([])
+const lyricLoading = ref(false)
 let lyricReqSeq = 0
 async function fetchLyrics() {
   const s = player.song
   const sid = songIdOf(s)
-  if (!sid) { realLyrics.value = []; return }
+  if (!sid) {
+    realLyrics.value = []
+    lyricLoading.value = false
+    return
+  }
   const seq = ++lyricReqSeq
   realLyrics.value = []
+  lyricLoading.value = true
   try {
     const res = await fetch('/api/lyric?id=' + encodeURIComponent(sid))
     const d = await res.json().catch(() => ({}))
@@ -112,11 +87,13 @@ async function fetchLyrics() {
     if (seq === lyricReqSeq) realLyrics.value = lines
   } catch (e) {
     if (seq === lyricReqSeq) realLyrics.value = []
+  } finally {
+    if (seq === lyricReqSeq) lyricLoading.value = false
   }
 }
 
-/* 最终展示的歌词：真歌词优先，兜底演示歌词次之 */
-const displayLyrics = computed(() => realLyrics.value.length ? realLyrics.value : lyrics.value)
+/* 歌词内容严格来自后端，不再有编造兜底 */
+const displayLyrics = computed(() => realLyrics.value)
 
 /* 切歌时重新拉取真歌词 */
 watch(() => songIdOf(player.song), () => fetchLyrics(), { immediate: true })
@@ -202,15 +179,20 @@ const waveBars = computed(() => {
         ></span>
       </div>
 
-      <!-- 歌词滚动 -->
-      <div v-if="lyricMode && displayLyrics.length" class="np-lyric">
-        <div class="np-lyric-scroll" ref="lyricScrollEl">
+      <!-- 歌词滚动：只展示真实 LRC；无歌词时明确提示纯音乐 -->
+      <div v-if="lyricMode" class="np-lyric">
+        <div v-if="lyricLoading" class="np-lyric-empty">歌词加载中...</div>
+        <div v-else-if="displayLyrics.length" class="np-lyric-scroll" ref="lyricScrollEl">
           <p
             v-for="(l, i) in displayLyrics"
             :key="i"
             class="np-lyric-line"
             :class="{ on: i === curLyricIdx }"
           >{{ l.text }}</p>
+        </div>
+        <div v-else class="np-lyric-empty">
+          <span>♪ 暂无歌词</span>
+          <small>纯音乐，或尚未提供真实 LRC</small>
         </div>
       </div>
 
@@ -415,6 +397,22 @@ const waveBars = computed(() => {
     font-size: 16px;
     font-weight: 700;
     transform: scale(1.02);
+  }
+  .np-lyric-empty {
+    height: 220px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    color: rgba(255,255,255,0.42);
+    font-size: 14px;
+    letter-spacing: 1px;
+  }
+  .np-lyric-empty small {
+    font-size: 11px;
+    color: rgba(255,255,255,0.28);
+    letter-spacing: 0;
   }
 
   .np-progress { display: flex; align-items: center; gap: 12px; margin-top: 28px; }

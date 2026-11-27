@@ -172,6 +172,21 @@ function excerpt(c) {
   return t.length > 80 ? t.slice(0, 80) + '…' : t
 }
 
+/* 头像：有真实图片则用图片，加载失败回退首字母 */
+function hasAvatar(u) {
+  const a = (u && u.avatar || '').trim()
+  return /^https?:\/\//i.test(a) || a.startsWith('/')
+}
+function avatarSrc(u) {
+  const a = (u && u.avatar || '').trim()
+  return /^https?:\/\//i.test(a) ? a : (a.startsWith('/') ? a : '')
+}
+function onAvatarError(e) {
+  const box = e.target.parentElement
+  if (box) box.classList.add('no-img')
+  e.target.style.display = 'none'
+}
+
 function goHome() { location.hash = '#/home' }
 </script>
 
@@ -278,7 +293,10 @@ function goHome() { location.hash = '#/home' }
         <div v-if="posts.length" class="fm-posts">
           <article v-for="p in posts" :key="p.id" class="fm-post" @click="openDetail(p)">
             <div class="fm-post-head">
-              <span class="fm-post-ava">{{ p.avatarLetter }}</span>
+              <span class="fm-post-ava ava-box" :class="{ 'no-img': !hasAvatar(p) }">
+                <img v-if="hasAvatar(p)" :src="avatarSrc(p)" :alt="p.nickname" @error="onAvatarError">
+                <span v-else>{{ p.avatarLetter }}</span>
+              </span>
               <div class="fm-post-meta">
                 <b>{{ p.nickname }}</b>
                 <span>🕒 {{ shortTime(p.createTime) }}<template v-if="p.province"> · 📍 {{ p.province }}</template></span>
@@ -320,7 +338,10 @@ function goHome() { location.hash = '#/home' }
           <i class="fm-modal-close" @click="showDetail = false">✕</i>
         </div>
         <div class="fm-modal-meta">
-          <span class="fm-post-ava sm">{{ detailPost.avatarLetter }}</span>
+          <span class="fm-post-ava sm ava-box" :class="{ 'no-img': !hasAvatar(detailPost) }">
+            <img v-if="hasAvatar(detailPost)" :src="avatarSrc(detailPost)" :alt="detailPost.nickname" @error="onAvatarError">
+            <span v-else>{{ detailPost.avatarLetter }}</span>
+          </span>
           <b>{{ detailPost.nickname }}</b>
           <span>🕒 {{ detailPost.createTime }}</span>
           <span v-if="detailPost.province">📍 {{ detailPost.province }}</span>
@@ -333,7 +354,10 @@ function goHome() { location.hash = '#/home' }
           <h4>💬 评论 ({{ comments.length }})</h4>
           <div v-if="comments.length" class="fm-comment-list">
             <div v-for="c in comments" :key="c.id" class="fm-comment">
-              <span class="fm-post-ava sm">{{ c.avatarLetter }}</span>
+              <span class="fm-post-ava sm ava-box" :class="{ 'no-img': !hasAvatar(c) }">
+                <img v-if="hasAvatar(c)" :src="avatarSrc(c)" :alt="c.nickname" @error="onAvatarError">
+                <span v-else>{{ c.avatarLetter }}</span>
+              </span>
               <div class="fm-comment-body">
                 <b>{{ c.nickname }}</b>
                 <p>{{ c.content }}</p>
@@ -556,8 +580,12 @@ function goHome() { location.hash = '#/home' }
     border: 3px solid var(--fm-ink);
     display: grid; place-items: center;
     font-size: 16px; font-weight: 900; color: var(--fm-ink);
+    overflow: hidden;
   }
-  .fm-post-ava.sm { width: 34px; height: 34px; font-size: 13px; }
+  .fm-post-ava.sm { width: 34px; height: 34px; font-size: 13px; border-width: 2px; }
+  .fm-post-ava img { width: 100%; height: 100%; object-fit: cover; display: block; border-radius: 50%; }
+  .fm-post-ava.ava-box { transition: transform .18s ease, box-shadow .18s ease; }
+  .fm-post:hover .fm-post-ava.ava-box { transform: scale(1.08) rotate(-4deg); box-shadow: 0 4px 12px rgba(58,58,58,.28); }
   .fm-post-meta { display: flex; flex-direction: column; }
   .fm-post-meta b { font-size: 14px; font-weight: 800; color: var(--fm-ink); }
   .fm-post-meta span { font-size: 12px; color: #9aa5b5; font-weight: 600; }

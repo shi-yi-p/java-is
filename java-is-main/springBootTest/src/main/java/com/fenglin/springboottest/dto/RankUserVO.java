@@ -15,8 +15,11 @@ public class RankUserVO {
 
     private String nickname;
 
-    /** 头像首字母 */
+    /** 头像首字母（无头像时回退展示） */
     private String avatarLetter;
+
+    /** 头像图片路径 */
+    private String avatar;
 
     /** 累计听歌时长（秒） */
     private long listenSeconds;

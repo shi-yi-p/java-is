@@ -342,6 +342,7 @@ public class ProfileServiceImpl implements ProfileService {
             vo.setNickname(u.getNickname() != null ? u.getNickname() : u.getAccount());
             String letter = vo.getNickname();
             vo.setAvatarLetter(letter == null || letter.isEmpty() ? "鲨" : letter.substring(0, 1));
+            vo.setAvatar(u.getAvatar());
             long sec = e.getTotalSeconds() != null ? e.getTotalSeconds() : 0;
             vo.setListenSeconds(sec);
             vo.setPlayCount(e.getPlayCount() != null ? e.getPlayCount() : 0);

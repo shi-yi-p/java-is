@@ -24,8 +24,11 @@ public class ForumPostVO {
     /** 发帖人昵称 */
     private String nickname;
 
-    /** 发帖人头像首字母 */
+    /** 发帖人头像首字母（无头像时回退展示） */
     private String avatarLetter;
+
+    /** 发帖人头像图片路径 */
+    private String avatar;
 
     private String createTime;
 }
