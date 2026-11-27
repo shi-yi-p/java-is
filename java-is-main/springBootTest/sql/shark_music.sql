@@ -11,7 +11,7 @@
  Target Server Version : 80039 (8.0.39)
  File Encoding         : 65001
 
- Date: 27/11/2026 14:38:54
+ Date: 27/11/2026 15:09:48
 */
 
 SET NAMES utf8mb4;
@@ -29,6 +29,7 @@ CREATE TABLE `audiobook`  (
   `tab` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '分类：热门/小说/儿童/相声/情感',
   `icon` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '封面图标(emoji)',
   `tone` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT 'p1' COMMENT '封面渐变配色编号 p1~p8',
+  `url` varchar(512) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '跳转链接',
   `listens` bigint NOT NULL DEFAULT 0 COMMENT '收听量',
   `sort_order` int NOT NULL DEFAULT 0 COMMENT '展示顺序(小在前)',
   `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
@@ -41,20 +42,20 @@ CREATE TABLE `audiobook`  (
 -- ----------------------------
 -- Records of audiobook
 -- ----------------------------
-INSERT INTO `audiobook` VALUES (1, '深海博物馆奇谈', '主播·阿鲸', '每晚一件海底展品背后的奇闻', '热门', '🌊', 'p3', 8600000, 1, '2026-11-05 13:53:11', '2026-11-05 13:53:11', 0);
-INSERT INTO `audiobook` VALUES (2, '睡前三分半', '主播·糖糖', '今天也辛苦了，听我讲个故事', '热门', '🌙', 'p1', 12000000, 2, '2026-11-05 13:53:11', '2026-11-05 13:53:11', 0);
-INSERT INTO `audiobook` VALUES (3, '午夜怪谈收容所', '主播·夜巡', '胆小勿入的都市传说合集', '热门', '🕯️', 'p7', 7200000, 3, '2026-11-05 13:53:11', '2026-11-05 13:53:11', 0);
-INSERT INTO `audiobook` VALUES (4, '孤岛灯塔看守日志', '老船长', '守灯人二十年的风浪手记', '热门', '🗺️', 'p4', 5300000, 4, '2026-11-05 13:53:11', '2026-11-05 13:53:11', 0);
-INSERT INTO `audiobook` VALUES (5, '蓝鲸座城市悬案', '无名侦探社', '水下都市的三桩离奇密室', '小说', '🔍', 'p2', 3900000, 1, '2026-11-05 13:53:11', '2026-11-05 13:53:11', 0);
-INSERT INTO `audiobook` VALUES (6, '荒野生存十二夜', '铁与木', '不带一根火柴的野外实录', '小说', '🏕️', 'p6', 1800000, 2, '2026-11-05 13:53:11', '2026-11-05 13:53:11', 0);
-INSERT INTO `audiobook` VALUES (7, '深海来信', '慢速铁轨', '沉船邮袋里打捞出的旧信件', '小说', '📜', 'p8', 2400000, 3, '2026-11-05 13:53:11', '2026-11-05 13:53:11', 0);
-INSERT INTO `audiobook` VALUES (8, '小鲨鱼成长记', '珊瑚姐姐', '适合 3-8 岁的海洋睡前故事', '儿童', '🦈', 'p6', 6700000, 1, '2026-11-05 13:53:11', '2026-11-05 13:53:11', 0);
-INSERT INTO `audiobook` VALUES (9, '咕噜咕噜海底幼儿园', '泡泡老师', '和小鱼们一起学礼貌好习惯', '儿童', '🫧', 'p8', 2100000, 2, '2026-11-05 13:53:11', '2026-11-05 13:53:11', 0);
-INSERT INTO `audiobook` VALUES (10, '码头相声大会', '铁嘴老周', '抖包袱不断更新的直播剪辑', '相声', '🎙️', 'p5', 4400000, 1, '2026-11-05 13:53:11', '2026-11-05 13:53:11', 0);
-INSERT INTO `audiobook` VALUES (11, '茶馆夜话·单口集', '醒木先生', '一块醒木，半城旧事', '相声', '🍵', 'p7', 1900000, 2, '2026-11-05 13:53:11', '2026-11-05 13:53:11', 0);
-INSERT INTO `audiobook` VALUES (12, '晚风情感电台', '主播·岛屿她', '深夜来电：把心事说给海风听', '情感', '💌', 'p4', 9800000, 1, '2026-11-05 13:53:11', '2026-11-05 13:53:11', 0);
-INSERT INTO `audiobook` VALUES (13, '写给灯塔的一百封信', '主播·暖洋', '一百个听众投稿的真实故事', '情感', '✉️', 'p3', 2600000, 2, '2026-11-05 13:53:11', '2026-11-05 13:53:11', 0);
-INSERT INTO `audiobook` VALUES (14, '漂流瓶树洞', '主播·拾贝', '捡到的每一个瓶子都有一段心事', '情感', '🍀', 'p5', 1500000, 3, '2026-11-05 13:53:11', '2026-11-05 13:53:11', 0);
+INSERT INTO `audiobook` VALUES (1, '深海博物馆奇谈', '主播·阿鲸', '每晚一件海底展品背后的奇闻', '热门', '🌊', 'p3', 'https://www.ximalaya.com/search/%E6%B7%B1%E6%B5%B7%E5%8D%9A%E7%89%A9%E9%A6%86%E5%A5%87%E8%B0%88', 8600000, 1, '2026-11-05 13:53:11', '2026-11-27 14:47:09', 0);
+INSERT INTO `audiobook` VALUES (2, '睡前三分半', '主播·糖糖', '今天也辛苦了，听我讲个故事', '热门', '🌙', 'p1', 'https://www.ximalaya.com/search/%E7%9D%A1%E5%89%8D%E4%B8%89%E5%88%86%E5%8D%8A', 12000000, 2, '2026-11-05 13:53:11', '2026-11-27 14:47:16', 0);
+INSERT INTO `audiobook` VALUES (3, '午夜怪谈收容所', '主播·夜巡', '胆小勿入的都市传说合集', '热门', '🕯️', 'p7', 'https://www.ximalaya.com/search/%E5%8D%88%E5%A4%9C%E6%80%AA%E8%B0%88%E6%94%B6%E5%AE%B9%E6%89%80', 7200000, 3, '2026-11-05 13:53:11', '2026-11-27 14:47:16', 0);
+INSERT INTO `audiobook` VALUES (4, '孤岛灯塔看守日志', '老船长', '守灯人二十年的风浪手记', '热门', '🗺️', 'p4', 'https://www.ximalaya.com/search/%E5%AD%A4%E5%B2%9B%E7%81%AF%E5%A1%94%E7%9C%8B%E5%AE%88%E6%97%A5%E5%BF%97', 5300000, 4, '2026-11-05 13:53:11', '2026-11-27 14:47:16', 0);
+INSERT INTO `audiobook` VALUES (5, '蓝鲸座城市悬案', '无名侦探社', '水下都市的三桩离奇密室', '小说', '🔍', 'p2', 'https://www.ximalaya.com/search/%E8%93%9D%E9%B2%B8%E5%BA%A7%E5%9F%8E%E5%B8%82%E6%82%AC%E6%A1%88', 3900000, 1, '2026-11-05 13:53:11', '2026-11-27 14:47:09', 0);
+INSERT INTO `audiobook` VALUES (6, '荒野生存十二夜', '铁与木', '不带一根火柴的野外实录', '小说', '🏕️', 'p6', 'https://www.ximalaya.com/search/%E8%8D%92%E9%87%8E%E7%94%9F%E5%AD%98%E5%8D%81%E4%BA%8C%E5%A4%9C', 1800000, 2, '2026-11-05 13:53:11', '2026-11-27 14:47:16', 0);
+INSERT INTO `audiobook` VALUES (7, '深海来信', '慢速铁轨', '沉船邮袋里打捞出的旧信件', '小说', '📜', 'p8', 'https://www.ximalaya.com/search/%E6%B7%B1%E6%B5%B7%E6%9D%A5%E4%BF%A1', 2400000, 3, '2026-11-05 13:53:11', '2026-11-27 14:47:16', 0);
+INSERT INTO `audiobook` VALUES (8, '小鲨鱼成长记', '珊瑚姐姐', '适合 3-8 岁的海洋睡前故事', '儿童', '🦈', 'p6', 'https://www.ximalaya.com/search/%E5%B0%8F%E9%B2%A8%E9%B1%BC%E6%88%90%E9%95%BF%E8%AE%B0', 6700000, 1, '2026-11-05 13:53:11', '2026-11-27 14:47:09', 0);
+INSERT INTO `audiobook` VALUES (9, '咕噜咕噜海底幼儿园', '泡泡老师', '和小鱼们一起学礼貌好习惯', '儿童', '🫧', 'p8', 'https://www.ximalaya.com/search/%E5%92%95%E5%99%9C%E5%92%95%E5%99%9C%E6%B5%B7%E5%BA%95%E5%B9%BC%E5%84%BF%E5%9B%AD', 2100000, 2, '2026-11-05 13:53:11', '2026-11-27 14:47:16', 0);
+INSERT INTO `audiobook` VALUES (10, '码头相声大会', '铁嘴老周', '抖包袱不断更新的直播剪辑', '相声', '🎙️', 'p5', 'https://www.ximalaya.com/search/%E7%A0%81%E5%A4%B4%E7%9B%B8%E5%A3%B0%E5%A4%A7%E4%BC%9A', 4400000, 1, '2026-11-05 13:53:11', '2026-11-27 14:47:09', 0);
+INSERT INTO `audiobook` VALUES (11, '茶馆夜话·单口集', '醒木先生', '一块醒木，半城旧事', '相声', '🍵', 'p7', 'https://www.ximalaya.com/search/%E8%8C%B6%E9%A6%86%E5%A4%9C%E8%AF%9D%C2%B7%E5%8D%95%E5%8F%A3%E9%9B%86', 1900000, 2, '2026-11-05 13:53:11', '2026-11-27 14:47:16', 0);
+INSERT INTO `audiobook` VALUES (12, '晚风情感电台', '主播·岛屿她', '深夜来电：把心事说给海风听', '情感', '💌', 'p4', 'https://www.ximalaya.com/search/%E6%99%9A%E9%A3%8E%E6%83%85%E6%84%9F%E7%94%B5%E5%8F%B0', 9800000, 1, '2026-11-05 13:53:11', '2026-11-27 14:47:09', 0);
+INSERT INTO `audiobook` VALUES (13, '写给灯塔的一百封信', '主播·暖洋', '一百个听众投稿的真实故事', '情感', '✉️', 'p3', 'https://www.ximalaya.com/search/%E5%86%99%E7%BB%99%E7%81%AF%E5%A1%94%E7%9A%84%E4%B8%80%E7%99%BE%E5%B0%81%E4%BF%A1', 2600000, 2, '2026-11-05 13:53:11', '2026-11-27 14:47:16', 0);
+INSERT INTO `audiobook` VALUES (14, '漂流瓶树洞', '主播·拾贝', '捡到的每一个瓶子都有一段心事', '情感', '🍀', 'p5', 'https://www.ximalaya.com/search/%E6%BC%82%E6%B5%81%E7%93%B6%E6%A0%91%E6%B4%9E', 1500000, 3, '2026-11-05 13:53:11', '2026-11-27 14:47:16', 0);
 
 -- ----------------------------
 -- Table structure for channel
@@ -65,6 +66,7 @@ CREATE TABLE `channel`  (
   `name` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '频道名称',
   `icon` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '频道图标(emoji)',
   `tone` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL DEFAULT 'p1' COMMENT '图标底色渐变编号 p1~p8',
+  `url` varchar(512) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '跳转链接',
   `listeners` bigint NOT NULL DEFAULT 0 COMMENT '当前在听人数',
   `sort_order` int NOT NULL DEFAULT 0 COMMENT '展示顺序(小在前)',
   `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
@@ -77,14 +79,14 @@ CREATE TABLE `channel`  (
 -- ----------------------------
 -- Records of channel
 -- ----------------------------
-INSERT INTO `channel` VALUES (1, '早安海底电台', '☀️', 'p3', 860000, 1, '2026-11-05 13:53:11', '2026-11-05 13:53:11', 0);
-INSERT INTO `channel` VALUES (2, '深夜故事馆', '🌙', 'p1', 620000, 2, '2026-11-05 13:53:11', '2026-11-05 13:53:11', 0);
-INSERT INTO `channel` VALUES (3, '白噪音专注舱', '🎧', 'p8', 1200000, 3, '2026-11-05 13:53:11', '2026-11-05 13:53:11', 0);
-INSERT INTO `channel` VALUES (4, '民谣小馆', '🪕', 'p7', 450000, 4, '2026-11-05 13:53:11', '2026-11-05 13:53:11', 0);
-INSERT INTO `channel` VALUES (5, '古典音乐沙龙', '🎻', 'p5', 380000, 5, '2026-11-05 13:53:11', '2026-11-05 13:53:11', 0);
-INSERT INTO `channel` VALUES (6, '影视原声站', '🎬', 'p2', 540000, 6, '2026-11-05 13:53:11', '2026-11-05 13:53:11', 0);
-INSERT INTO `channel` VALUES (7, '国风雅集', '🏮', 'p4', 720000, 7, '2026-11-05 13:53:11', '2026-11-05 13:53:11', 0);
-INSERT INTO `channel` VALUES (8, '儿童故事堡', '🏰', 'p6', 290000, 8, '2026-11-05 13:53:11', '2026-11-05 13:53:11', 0);
+INSERT INTO `channel` VALUES (1, '早安海底电台', '☀️', 'p3', 'https://search.bilibili.com/live?keyword=%E6%97%A9%E5%AE%89%E6%B5%B7%E5%BA%95%E7%94%B5%E5%8F%B0', 860000, 1, '2026-11-05 13:53:11', '2026-11-27 14:47:09', 0);
+INSERT INTO `channel` VALUES (2, '深夜故事馆', '🌙', 'p1', 'https://search.bilibili.com/live?keyword=%E6%B7%B1%E5%A4%9C%E6%95%85%E4%BA%8B%E9%A6%86', 620000, 2, '2026-11-05 13:53:11', '2026-11-27 14:47:09', 0);
+INSERT INTO `channel` VALUES (3, '白噪音专注舱', '🎧', 'p8', 'https://search.bilibili.com/live?keyword=%E7%99%BD%E5%99%AA%E9%9F%B3%E4%B8%93%E6%B3%A8%E8%88%B1', 1200000, 3, '2026-11-05 13:53:11', '2026-11-27 14:47:09', 0);
+INSERT INTO `channel` VALUES (4, '民谣小馆', '🪕', 'p7', 'https://search.bilibili.com/live?keyword=%E6%B0%91%E8%B0%A3%E5%B0%8F%E9%A6%86', 450000, 4, '2026-11-05 13:53:11', '2026-11-27 14:47:09', 0);
+INSERT INTO `channel` VALUES (5, '古典音乐沙龙', '🎻', 'p5', 'https://search.bilibili.com/live?keyword=%E5%8F%A4%E5%85%B8%E9%9F%B3%E4%B9%90%E6%B2%99%E9%BE%99', 380000, 5, '2026-11-05 13:53:11', '2026-11-27 14:47:09', 0);
+INSERT INTO `channel` VALUES (6, '影视原声站', '🎬', 'p2', 'https://search.bilibili.com/live?keyword=%E5%BD%B1%E8%A7%86%E5%8E%9F%E5%A3%B0%E7%AB%99', 540000, 6, '2026-11-05 13:53:11', '2026-11-27 14:47:09', 0);
+INSERT INTO `channel` VALUES (7, '国风雅集', '🏮', 'p4', 'https://search.bilibili.com/live?keyword=%E5%9B%BD%E9%A3%8E%E9%9B%85%E9%9B%86', 720000, 7, '2026-11-05 13:53:11', '2026-11-27 14:47:09', 0);
+INSERT INTO `channel` VALUES (8, '儿童故事堡', '🏰', 'p6', 'https://search.bilibili.com/live?keyword=%E5%84%BF%E7%AB%A5%E6%95%85%E4%BA%8B%E5%A0%A1', 290000, 8, '2026-11-05 13:53:11', '2026-11-27 14:47:16', 0);
 
 -- ----------------------------
 -- Table structure for chart
@@ -239,7 +241,7 @@ CREATE TABLE `forum_comment`  (
   `deleted` tinyint NOT NULL DEFAULT 0,
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_comment_post`(`post_id` ASC) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '论坛评论' ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB AUTO_INCREMENT = 2 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '论坛评论' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of forum_comment
@@ -269,7 +271,7 @@ CREATE TABLE `forum_post`  (
 -- ----------------------------
 -- Records of forum_post
 -- ----------------------------
-INSERT INTO `forum_post` VALUES (4, 1, '宿敌', '这首歌真好听', 'music', '', 2, 0, 2, '2026-11-16 09:08:07', 0);
+INSERT INTO `forum_post` VALUES (4, 1, '宿敌', '这首歌真好听', 'music', '', 2, 0, 3, '2026-11-16 09:08:07', 0);
 
 -- ----------------------------
 -- Table structure for kugou_hot_song
@@ -436,7 +438,7 @@ CREATE TABLE `play_history`  (
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_user_time`(`user_id` ASC, `played_at` ASC) USING BTREE,
   INDEX `idx_song`(`song_id` ASC) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 81 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '用户播放历史表' ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB AUTO_INCREMENT = 91 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '用户播放历史表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of play_history
@@ -513,6 +515,16 @@ INSERT INTO `play_history` VALUES (77, 16, 126, 224, '2026-11-19 15:07:30', 0);
 INSERT INTO `play_history` VALUES (78, 1, 62, 299, '2026-11-27 14:18:59', 0);
 INSERT INTO `play_history` VALUES (79, 1, 93, 269, '2026-11-27 14:36:39', 0);
 INSERT INTO `play_history` VALUES (80, 1, 93, 269, '2026-11-27 14:36:40', 0);
+INSERT INTO `play_history` VALUES (81, 1, 101, 269, '2026-11-27 14:40:54', 0);
+INSERT INTO `play_history` VALUES (82, 1, 101, 269, '2026-11-27 14:40:55', 0);
+INSERT INTO `play_history` VALUES (83, 1, 101, 269, '2026-11-27 14:53:05', 0);
+INSERT INTO `play_history` VALUES (84, 1, 62, 299, '2026-11-27 14:58:59', 0);
+INSERT INTO `play_history` VALUES (85, 1, 101, 269, '2026-11-27 15:03:48', 0);
+INSERT INTO `play_history` VALUES (86, 1, 101, 269, '2026-11-27 15:04:05', 0);
+INSERT INTO `play_history` VALUES (87, 1, 101, 269, '2026-11-27 15:04:37', 0);
+INSERT INTO `play_history` VALUES (88, 1, 11, 284, '2026-11-27 15:06:05', 0);
+INSERT INTO `play_history` VALUES (89, 1, 1, 222, '2026-11-27 15:06:15', 0);
+INSERT INTO `play_history` VALUES (90, 1, 2, 255, '2026-11-27 15:06:44', 0);
 
 -- ----------------------------
 -- Table structure for playlist
@@ -658,7 +670,7 @@ CREATE TABLE `song`  (
 -- ----------------------------
 -- Records of song
 -- ----------------------------
-INSERT INTO `song` VALUES (1, '潮汐信号', '蓝鲸乐队', '深海电台', 222, '/music/track-1.mp3', NULL, 982000, '2026-11-05 13:53:11', '2026-11-27 14:13:09', 0);
+INSERT INTO `song` VALUES (1, '潮汐信号', '蓝鲸乐队', '深海电台', 222, '/music/track-1.mp3', '', 982000, '2026-11-05 13:53:11', '2026-11-27 15:07:01', 0);
 INSERT INTO `song` VALUES (2, '凌晨三点的灯塔', '岛屿她', '夜航船', 255, '/music/track-2.mp3', NULL, 745000, '2026-11-05 13:53:11', '2026-11-27 14:13:09', 0);
 INSERT INTO `song` VALUES (3, '逆流而上', '风暴少年', '冲浪手册', 185, '/music/track-3.mp3', NULL, 512000, '2026-11-05 13:53:11', '2026-11-27 14:13:09', 0);
 INSERT INTO `song` VALUES (4, '环礁日落', 'Coral·珊瑚', '环礁日志', 238, '/music/track-4.mp3', NULL, 388000, '2026-11-05 13:53:11', '2026-11-27 14:13:09', 0);
@@ -897,7 +909,7 @@ CREATE TABLE `user_moment`  (
   `deleted` tinyint NOT NULL DEFAULT 0 COMMENT '逻辑删除：0-未删 1-已删',
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_user_time`(`user_id` ASC, `create_time` ASC) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 104 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '用户动态表' ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB AUTO_INCREMENT = 114 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '用户动态表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of user_moment
@@ -991,6 +1003,16 @@ INSERT INTO `user_moment` VALUES (100, 16, 'listen', '正在听「小美满」',
 INSERT INTO `user_moment` VALUES (101, 1, 'listen', '正在听「发如雪」', 62, NULL, '2026-11-27 14:18:59', 0);
 INSERT INTO `user_moment` VALUES (102, 1, 'listen', '正在听「晴天」', 93, NULL, '2026-11-27 14:36:39', 0);
 INSERT INTO `user_moment` VALUES (103, 1, 'listen', '正在听「晴天」', 93, NULL, '2026-11-27 14:36:39', 0);
+INSERT INTO `user_moment` VALUES (104, 1, 'listen', '正在听「一千个伤心的理由」', 101, NULL, '2026-11-27 14:40:54', 0);
+INSERT INTO `user_moment` VALUES (105, 1, 'listen', '正在听「一千个伤心的理由」', 101, NULL, '2026-11-27 14:40:54', 0);
+INSERT INTO `user_moment` VALUES (106, 1, 'listen', '正在听「一千个伤心的理由」', 101, NULL, '2026-11-27 14:53:04', 0);
+INSERT INTO `user_moment` VALUES (107, 1, 'listen', '正在听「发如雪」', 62, NULL, '2026-11-27 14:58:58', 0);
+INSERT INTO `user_moment` VALUES (108, 1, 'listen', '正在听「一千个伤心的理由」', 101, NULL, '2026-11-27 15:03:47', 0);
+INSERT INTO `user_moment` VALUES (109, 1, 'listen', '正在听「一千个伤心的理由」', 101, NULL, '2026-11-27 15:04:04', 0);
+INSERT INTO `user_moment` VALUES (110, 1, 'listen', '正在听「一千个伤心的理由」', 101, NULL, '2026-11-27 15:04:37', 0);
+INSERT INTO `user_moment` VALUES (111, 1, 'listen', '正在听「深海回响」', 11, NULL, '2026-11-27 15:06:05', 0);
+INSERT INTO `user_moment` VALUES (112, 1, 'listen', '正在听「潮汐信号」', 1, NULL, '2026-11-27 15:06:15', 0);
+INSERT INTO `user_moment` VALUES (113, 1, 'listen', '正在听「凌晨三点的灯塔」', 2, NULL, '2026-11-27 15:06:43', 0);
 
 -- ----------------------------
 -- Table structure for user_moment_like
