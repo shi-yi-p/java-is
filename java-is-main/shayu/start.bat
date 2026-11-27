@@ -85,8 +85,8 @@ REM 启动后端（独立窗口，端口显式指定 8081）
 REM ============================================
 if not defined BACK_UP (
     echo [1/2] 启动后端 Spring Boot :8081 ...
-    REM 用 run-backend.sh 启动（绕开 mvnw 在 Git Bash 下的路径解析问题）
-    start "鲨鱼音乐-后端" cmd /k "chcp 65001 >nul && cd /d !BACKEND! && bash run-backend.sh"
+    REM 直接启动独立 bat，不依赖 bash，也不用 cmd /k 嵌套长命令
+    start "鲨鱼音乐-后端" "!BACKEND!\start-backend.bat"
 ) else (
     echo [1/2] 后端已在 8081 运行，跳过
 )
@@ -96,24 +96,24 @@ REM 启动前端（独立窗口）
 REM ============================================
 if not defined FRONT_UP (
     echo [2/2] 启动前端 Vite :5173 ...
-    start "鲨鱼音乐-前端" cmd /k "chcp 65001 >nul && cd /d !SHAYU! && npm run dev"
+    start "鲨鱼音乐-前端" "!SHAYU!\start-frontend.bat"
 ) else (
     echo [2/2] 前端已在 5173 运行，跳过
 )
 
 REM ============================================
-REM 等待后端就绪后打开浏览器（最多约 60 秒）
+REM 等待后端就绪后打开浏览器（最多约 120 秒）
 REM ============================================
 echo.
-echo        等待服务就绪（首次编译约需 20~40 秒）...
+echo        等待服务就绪（首次运行需下载依赖，可能要 1~2 分钟）...
 set /a WAIT=0
 :CHECK_LOOP
-ping -n 3 127.0.0.1 >nul
-set /a WAIT+=3
+ping -n 2 127.0.0.1 >nul
+set /a WAIT+=2
 netstat -ano | findstr /c:":8081" | findstr /c:"LISTENING" >nul 2>&1
 if errorlevel 1 (
-    if !WAIT! LSS 60 goto CHECK_LOOP
-    echo [提示] 60 秒内后端未就绪，请查看后端窗口日志。浏览器仍将打开前端页面。
+    if !WAIT! LSS 120 goto CHECK_LOOP
+    echo [警告] 120 秒内后端仍未监听 8081，请查看"鲨鱼音乐-后端"窗口日志。浏览器仍将打开前端页面。
 )
 echo        正在打开浏览器...
 start http://!LAN_IP!:5173

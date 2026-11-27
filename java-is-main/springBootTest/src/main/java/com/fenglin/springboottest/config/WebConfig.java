@@ -31,5 +31,12 @@ public class WebConfig implements WebMvcConfigurer {
         String dir = Path.of(System.getProperty("user.dir"), "uploads")
                 .toAbsolutePath().normalize().toUri().toString();
         registry.addResourceHandler("/uploads/**").addResourceLocations(dir);
+
+        // 免费授权音源：/music/** -> 前端 shayu/public/music/
+        // 后端 /api/stream 会 302 到 /music/track-N.mp3（相对路径落在 8081），
+        // 这里让 8081 也能直接提供同一份文件；Vite 侧同样能访问该目录。
+        String musicDir = Path.of(System.getProperty("user.dir"), "..", "shayu", "public", "music")
+                .toAbsolutePath().normalize().toUri().toString();
+        registry.addResourceHandler("/music/**").addResourceLocations(musicDir);
     }
 }

@@ -9,9 +9,25 @@ const API = ''
 
 const account = ref('')
 const nickname = ref('')
+const avatar = ref('')
 const keyword = ref('')
 const toastMsg = ref('')
 let toastTimer = null
+
+/* 头像：图片 URL 显示图片，emoji/空显示昵称首字母 */
+function isImageAvatar(v) {
+  return /^(https?:\/\/|\/uploads\/|data:image\/)/i.test((v || '').trim())
+}
+function onHomeAvatarError(e) {
+  e.target.style.display = 'none'
+}
+const homeAvatarSrc = computed(() => isImageAvatar(avatar.value) ? avatar.value.trim() : '')
+const homeAvatarLetter = computed(() => {
+  const a = (avatar.value || '').trim()
+  if (a && !isImageAvatar(a)) return a
+  // 不引用后面的 helloName（const 暂时性死区），直接用当前昵称/账号兜底
+  return (nickname.value || account.value || '鲨').slice(0, 1)
+})
 
 function toast(m) {
   toastMsg.value = m
@@ -37,6 +53,7 @@ onMounted(async () => {
     if (res.ok && data.data) {
       account.value = data.data.account || ''
       nickname.value = data.data.nickname || data.data.account || '鲨鲨乐迷'
+      avatar.value = data.data.avatar || ''
     }
   } catch (e) {
     toast('无法连接服务器 (8081)，请确认后端已启动 🔌')
@@ -577,7 +594,10 @@ function goProfile() {
 
       <div class="kg-user">
         <a class="kg-user-link" href="#/profile" @click.prevent="goProfile">
-          <div class="kg-avatar">{{ helloName.slice(0, 1) }}</div>
+          <div class="kg-avatar">
+            <img v-if="homeAvatarSrc" :src="homeAvatarSrc" alt="头像" @error="onHomeAvatarError" />
+            <span v-else>{{ homeAvatarLetter }}</span>
+          </div>
           <span class="kg-nick">{{ helloName }}</span>
         </a>
         <button class="kg-logout" type="button" @click="logout">退出</button>
@@ -1098,7 +1118,9 @@ function goProfile() {
     border: 2px solid rgba(255, 255, 255, 0.6);
     display: grid; place-items: center;
     font-size: 13px; font-weight: 800; color: var(--ink);
+    overflow: hidden;
   }
+  .kg-avatar img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; background: #fff; }
   .kg-nick { font-size: 13px; max-width: 110px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .kg-logout {
     font-family: var(--font); font-size: 11.5px; font-weight: 700;

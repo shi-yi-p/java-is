@@ -609,7 +609,9 @@ async function confirmCrop() {
     editAvatar.value = (d.data && d.data.avatar) || ''
     avatarUrlInput.value = ''
     showCropModal.value = false
-    toast('头像已裁剪上传，点保存生效 ✅')
+    toast('头像已更新 ✅')
+    // 上传接口已直接写库，立即同步主页数据，无需再点保存
+    await loadProfile()
   } catch (err) {
     toast('上传失败，请稍后重试')
   } finally {

@@ -107,6 +107,7 @@ public class AuthController {
         Map<String, String> data = new HashMap<>();
         data.put("account", account);
         data.put("nickname", user != null ? user.getNickname() : "");
+        data.put("avatar", user != null && user.getAvatar() != null ? user.getAvatar() : "");
         return ResponseEntity.ok(Result.ok("已登录", data));
     }
 }
